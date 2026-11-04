@@ -1,13 +1,12 @@
+
 package it.unicam.cs.mpgc.rpg125904;
+
+import it.unicam.cs.mpgc.rpg125904.presentation.GameWindow;
+import javafx.application.Application;
 
 public class Main {
 
     public static void main(String[] args) {
-
-        System.out.println("================================");
-        System.out.println("       DUNGEON ADVENTURE");
-        System.out.println("================================");
-        System.out.println();
-        System.out.println("Benvenuto, avventuriero!");
-        System.out.println("La tua avventura sta per iniziare...");
-    }}
+        Application.launch(GameWindow.class, args);
+    }
+}
