@@ -1,5 +1,7 @@
 
 package it.unicam.cs.mpgc.rpg125904.presentation;
+import it.unicam.cs.mpgc.rpg125904.application.GameManager;
+import it.unicam.cs.mpgc.rpg125904.domain.Game;
 
 import javafx.application.Application;
 import javafx.scene.Scene;
@@ -22,6 +24,8 @@ import javafx.stage.Stage;
 
 public class GameWindow extends Application {
 
+    private final GameManager gameManager = new GameManager();
+    private Game currentGame;
     @Override
     public void start(Stage primaryStage) {
 
@@ -51,6 +55,13 @@ public class GameWindow extends Application {
 
         // Pulsante nuova partita
         Button newGameButton = new Button("Nuova partita");
+        newGameButton.setOnAction(event -> {
+            currentGame = gameManager.startNewGame("Esploratore");
+
+            System.out.println("Nuova partita avviata!");
+            System.out.println("Giocatore: " + currentGame.getPlayer().getName());
+            System.out.println("Stanza: " + currentGame.getCurrentRoom().getName());
+        });
 
         // Pulsante esci
         Button exitButton = new Button("Esci");
