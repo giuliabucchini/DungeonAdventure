@@ -56,13 +56,22 @@ public class GameWindow extends Application {
         // Pulsante nuova partita
         Button newGameButton = new Button("Nuova partita");
         newGameButton.setOnAction(event -> {
+
+            // Avvio di una nuova partita
             currentGame = gameManager.startNewGame("Esploratore");
 
-            System.out.println("Nuova partita avviata!");
-            System.out.println("Giocatore: " + currentGame.getPlayer().getName());
-            System.out.println("Stanza: " + currentGame.getCurrentRoom().getName());
-        });
+            // Creazione della schermata di gioco
+            GameScreen gameScreen = new GameScreen();
 
+            // Visualizzazione della nuova schermata
+            Scene gameScene = new Scene(
+                    gameScreen.createView(currentGame),
+                    900,
+                    600
+            );
+
+            primaryStage.setScene(gameScene);
+        });
         // Pulsante esci
         Button exitButton = new Button("Esci");
         exitButton.setOnAction(event -> primaryStage.close());
