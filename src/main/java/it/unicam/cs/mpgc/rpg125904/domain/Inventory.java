@@ -12,9 +12,11 @@ public class Inventory {
     }
 
     public void addItem(Item item) {
-        items.add(item);
-    }
 
+        if (!containsItem(item.getName())) {
+            items.add(item);
+        }
+    }
     public List<Item> getItems() {
         return List.copyOf(items);
     }

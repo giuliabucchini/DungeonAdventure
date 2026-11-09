@@ -26,6 +26,9 @@ public class Game {
     public boolean hasNextRoom() {
         return currentRoomIndex < rooms.size() - 1;
     }
+    public boolean isCompleted() {
+        return !hasNextRoom();
+    }
 
     public void moveToNextRoom() {
         if (hasNextRoom()) {
