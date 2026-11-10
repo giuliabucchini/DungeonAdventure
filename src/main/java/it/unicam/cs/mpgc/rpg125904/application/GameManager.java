@@ -5,6 +5,7 @@ import it.unicam.cs.mpgc.rpg125904.domain.Game;
 import it.unicam.cs.mpgc.rpg125904.domain.Room;
 import it.unicam.cs.mpgc.rpg125904.domain.Item;
 import it.unicam.cs.mpgc.rpg125904.domain.Puzzle;
+import it.unicam.cs.mpgc.rpg125904.persistence.GameSaveData;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -110,4 +111,63 @@ public class GameManager {
 
         return puzzle.checkSolution(answer);
     }
-}
+
+        public GameSaveData createSaveData(Game game) {
+
+            List<String> inventoryItems = new ArrayList<>();
+
+            // Recupera gli oggetti presenti nell'inventario
+            for (Item item : game.getPlayer().getInventory().getItems()) {
+                inventoryItems.add(item.getName());
+            }
+
+            // Recupera lo stato dell'enigma
+            Puzzle puzzle = game.getRoom(2).getPuzzle();
+
+            boolean puzzleSolved = puzzle != null && puzzle.isSolved();
+
+            // Crea l'oggetto contenente i dati da salvare
+            return new GameSaveData(
+                    game.getPlayer().getName(),
+                    game.getCurrentRoomIndex(),
+                    inventoryItems,
+                    puzzleSolved
+            );
+        }
+    // Ricostruisce una partita utilizzando i dati salvati
+    public Game restoreGame(GameSaveData saveData) {
+
+        Game game = startNewGame(saveData.getPlayerName());
+
+        // Ripristina la stanza corrente
+        game.setCurrentRoomIndex(saveData.getCurrentRoomIndex());
+
+        // Ripristina gli oggetti dell'inventario
+        for (String itemName : saveData.getInventoryItems()) {
+
+            for (int i = 0; i < 4; i++) {
+
+                Room room = game.getRoom(i);
+
+                for (Item item : room.getItems()) {
+
+                    if (item.getName().equals(itemName)) {
+                        game.getPlayer().getInventory().addItem(item);
+                        room.removeItem(item);
+                    }
+                }
+            }
+        }
+
+        // Ripristina lo stato dell'enigma
+        Puzzle puzzle = game.getRoom(2).getPuzzle();
+
+        if (puzzle != null) {
+            puzzle.setSolved(saveData.isPuzzleSolved());
+        }
+
+        return game;
+    }
+
+    }
+

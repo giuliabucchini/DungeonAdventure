@@ -1,0 +1,8 @@
+{
+  "playerName": "Esploratore",
+  "currentRoomIndex": 1,
+  "inventoryItems": [
+    "Frammento di pietra"
+  ],
+  "puzzleSolved": false
+}

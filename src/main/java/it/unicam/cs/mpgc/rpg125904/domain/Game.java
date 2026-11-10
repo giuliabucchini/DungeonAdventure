@@ -1,3 +1,4 @@
+
 package it.unicam.cs.mpgc.rpg125904.domain;
 
 import java.util.ArrayList;
@@ -22,10 +23,24 @@ public class Game {
     public Room getCurrentRoom() {
         return rooms.get(currentRoomIndex);
     }
+    public Room getRoom(int index) {
+        return rooms.get(index);
+    }
+
+    public int getCurrentRoomIndex() {
+        return currentRoomIndex;
+    }
+
+    public void setCurrentRoomIndex(int index) {
+        if (index >= 0 && index < rooms.size()) {
+            currentRoomIndex = index;
+        }
+    }
 
     public boolean hasNextRoom() {
         return currentRoomIndex < rooms.size() - 1;
     }
+
     public boolean isCompleted() {
         return !hasNextRoom();
     }

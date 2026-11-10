@@ -1,3 +1,4 @@
+
 package it.unicam.cs.mpgc.rpg125904.domain;
 
 public class Puzzle {
@@ -18,6 +19,10 @@ public class Puzzle {
 
     public boolean isSolved() {
         return solved;
+    }
+
+    public void setSolved(boolean solved) {
+        this.solved = solved;
     }
 
     public boolean checkSolution(String answer) {

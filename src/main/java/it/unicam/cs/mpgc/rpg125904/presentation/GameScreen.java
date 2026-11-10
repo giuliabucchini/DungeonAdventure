@@ -4,6 +4,8 @@ package it.unicam.cs.mpgc.rpg125904.presentation;
 import it.unicam.cs.mpgc.rpg125904.domain.Game;
 import it.unicam.cs.mpgc.rpg125904.domain.Item;
 import it.unicam.cs.mpgc.rpg125904.application.GameManager;
+import it.unicam.cs.mpgc.rpg125904.persistence.GameSaveData;
+import it.unicam.cs.mpgc.rpg125904.persistence.GameSaver;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -19,6 +21,8 @@ import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+
+import java.io.IOException;
 
 public class GameScreen {
 
@@ -74,8 +78,9 @@ public class GameScreen {
         message.setTextFill(Color.web("#E4C17A"));
 
         // Informazioni sull'inventario
-        Label inventoryLabel = new Label("Inventario: vuoto");
-        inventoryLabel.setFont(Font.font("Serif", 17));
+        Label inventoryLabel = new Label(
+                getInventoryText(game)
+        );        inventoryLabel.setFont(Font.font("Serif", 17));
         inventoryLabel.setTextFill(Color.web("#F3E5C8"));
 
         // Descrizione dell'enigma
@@ -141,8 +146,41 @@ public class GameScreen {
                 )
         ));
 
+        // Pulsante per salvare la partita
+        Button saveButton = new Button("Salva partita");
+
+        saveButton.setPrefSize(200, 45);
+        saveButton.setFont(Font.font("Serif", 18));
+        saveButton.setTextFill(Color.web("#F3E5C8"));
+        saveButton.setBackground(new javafx.scene.layout.Background(
+                new javafx.scene.layout.BackgroundFill(
+                        Color.web("#80603C"),
+                        new javafx.scene.layout.CornerRadii(8),
+                        Insets.EMPTY
+                )
+        ));
+
         // Gestione delle operazioni di gioco
         GameManager gameManager = new GameManager();
+
+        // Gestione del salvataggio della partita
+        GameSaver gameSaver = new GameSaver();
+
+        saveButton.setOnAction(event -> {
+
+            try {
+                GameSaveData saveData = gameManager.createSaveData(game);
+
+                gameSaver.save(saveData, "partita.json");
+
+                message.setText("Partita salvata correttamente!");
+
+            } catch (IOException e) {
+
+                message.setText("Errore durante il salvataggio della partita.");
+                e.printStackTrace();
+            }
+        });
 
         // Raccolta degli oggetti
         collectButton.setOnAction(event -> {
@@ -246,7 +284,7 @@ public class GameScreen {
                     solveButton.setManaged(false);
                 }
 
-                if (!game.isCompleted()) {
+                if (game.isCompleted()) {
 
                     exploreButton.setText("Avventura completata");
                     exploreButton.setDisable(true);
@@ -281,7 +319,8 @@ public class GameScreen {
                 answerField,
                 solveButton,
                 collectButton,
-                exploreButton
+                exploreButton,
+                saveButton
         );
 
         // Composizione della schermata
@@ -308,6 +347,23 @@ public class GameScreen {
         );
 
         for (Item item : game.getCurrentRoom().getItems()) {
+            text.append(item.getName()).append(", ");
+        }
+
+        text.setLength(text.length() - 2);
+
+        return text.toString();
+    }
+    // Recupera il testo degli oggetti presenti nell'inventario
+    private String getInventoryText(Game game) {
+
+        if (game.getPlayer().getInventory().getItems().isEmpty()) {
+            return "Inventario: vuoto";
+        }
+
+        StringBuilder text = new StringBuilder("Inventario: ");
+
+        for (Item item : game.getPlayer().getInventory().getItems()) {
             text.append(item.getName()).append(", ");
         }
 
