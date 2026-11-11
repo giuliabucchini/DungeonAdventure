@@ -1,374 +1,435 @@
 
 package it.unicam.cs.mpgc.rpg125904.presentation;
 
+import it.unicam.cs.mpgc.rpg125904.application.GameManager;
 import it.unicam.cs.mpgc.rpg125904.domain.Game;
 import it.unicam.cs.mpgc.rpg125904.domain.Item;
-import it.unicam.cs.mpgc.rpg125904.application.GameManager;
 import it.unicam.cs.mpgc.rpg125904.persistence.GameSaveData;
 import it.unicam.cs.mpgc.rpg125904.persistence.GameSaver;
 
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
 import javafx.scene.Parent;
-import javafx.scene.control.Label;
 import javafx.scene.control.Button;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.control.Tooltip;
 
 import java.io.IOException;
+import java.io.InputStream;
 
 public class GameScreen {
 
+    private final GameManager gameManager = new GameManager();
+    private final GameSaver gameSaver = new GameSaver();
+
+    private final Color gold = Color.web("#E6BD70");
+    private final Color cream = Color.web("#F5E8CF");
+    private final Color dark = Color.rgb(22, 17, 13, 0.88);
+    private final Color blue = Color.web("#172D42");
+
     public Parent createView(Game game) {
 
-        // Caricamento dello sfondo
-        Image image = new Image(
-                getClass().getResourceAsStream("/images/temple.png")
-        );
+        // SFONDO
+        ImageView background = new ImageView();
 
-        ImageView background = new ImageView(image);
+        InputStream stream =
+                getClass().getResourceAsStream("/images/temple.png");
+
+        if (stream != null) {
+            background.setImage(new Image(stream));
+        }
+
         background.setFitWidth(900);
         background.setFitHeight(600);
         background.setPreserveRatio(false);
+        background.setMouseTransparent(true);
 
-        // Livello scuro sopra lo sfondo
-        Rectangle overlay = new Rectangle(900, 600);
-        overlay.setFill(Color.rgb(20, 15, 10, 0.55));
-
-        // Nome della stanza
-        Label roomName = new Label(
-                game.getCurrentRoom().getName()
-        );
-        roomName.setFont(Font.font("Serif", FontWeight.BOLD, 36));
-        roomName.setTextFill(Color.web("#E4C17A"));
-
-        // Descrizione della stanza
-        Label description = new Label(
-                game.getCurrentRoom().getDescription()
-        );
-        description.setFont(Font.font("Serif", 20));
-        description.setTextFill(Color.web("#F3E5C8"));
-        description.setWrapText(true);
-        description.setMaxWidth(600);
-
-        // Oggetti presenti nella stanza
-        Label roomItemsLabel = new Label(
-                getRoomItemsText(game)
-        );
-        roomItemsLabel.setFont(Font.font("Serif", 17));
-        roomItemsLabel.setTextFill(Color.web("#E4C17A"));
-
-        // Nome del giocatore
-        Label playerName = new Label(
-                "Esploratore: " + game.getPlayer().getName()
-        );
-        playerName.setFont(Font.font("Serif", 17));
-        playerName.setTextFill(Color.web("#F3E5C8"));
-
-        // Messaggio per il giocatore
-        Label message = new Label("");
-        message.setFont(Font.font("Serif", 17));
-        message.setTextFill(Color.web("#E4C17A"));
-
-        // Informazioni sull'inventario
-        Label inventoryLabel = new Label(
-                getInventoryText(game)
-        );        inventoryLabel.setFont(Font.font("Serif", 17));
-        inventoryLabel.setTextFill(Color.web("#F3E5C8"));
-
-        // Descrizione dell'enigma
-        Label puzzleLabel = new Label();
-        puzzleLabel.setFont(Font.font("Serif", 19));
-        puzzleLabel.setTextFill(Color.web("#E4C17A"));
-        puzzleLabel.setWrapText(true);
-        puzzleLabel.setMaxWidth(600);
-
-        // Campo per inserire la risposta
-        TextField answerField = new TextField();
-        answerField.setPromptText("Inserisci la tua risposta");
-        answerField.setMaxWidth(300);
-
-        // Pulsante per verificare la risposta
-        Button solveButton = new Button("Verifica risposta");
-        solveButton.setPrefSize(200, 45);
-        solveButton.setFont(Font.font("Serif", 18));
-        solveButton.setTextFill(Color.web("#F3E5C8"));
-        solveButton.setBackground(new javafx.scene.layout.Background(
-                new javafx.scene.layout.BackgroundFill(
-                        Color.web("#80603C"),
-                        new javafx.scene.layout.CornerRadii(8),
+        // OSCURAMENTO LEGGERO
+        Region overlay = new Region();
+        overlay.setBackground(new Background(
+                new BackgroundFill(
+                        Color.rgb(12, 9, 6, 0.18),
+                        CornerRadii.EMPTY,
                         Insets.EMPTY
                 )
         ));
+        overlay.setMouseTransparent(true);
 
-        // L'enigma inizialmente non è visibile
-        puzzleLabel.setVisible(false);
-        puzzleLabel.setManaged(false);
+        // CONTENITORE PRINCIPALE
+        BorderPane layout = new BorderPane();
+        layout.setPadding(new Insets(12));
 
-        answerField.setVisible(false);
-        answerField.setManaged(false);
+        // BARRA SUPERIORE
+        Label title = new Label("DUNGEON ADVENTURE");
+        title.setFont(Font.font("Serif", FontWeight.BOLD, 21));
+        title.setTextFill(gold);
 
-        solveButton.setVisible(false);
-        solveButton.setManaged(false);
+        Label roomTitle = new Label();
+        roomTitle.setFont(Font.font("Serif", FontWeight.BOLD, 20));
+        roomTitle.setTextFill(cream);
 
-        // Pulsante per raccogliere gli oggetti
-        Button collectButton = new Button("Raccogli oggetti");
+        Button saveButton = createButton("💾 Salva", blue);
 
-        collectButton.setPrefSize(200, 45);
-        collectButton.setFont(Font.font("Serif", 18));
-        collectButton.setTextFill(Color.web("#F3E5C8"));
-        collectButton.setBackground(new javafx.scene.layout.Background(
-                new javafx.scene.layout.BackgroundFill(
-                        Color.web("#80603C"),
-                        new javafx.scene.layout.CornerRadii(8),
-                        Insets.EMPTY
-                )
-        ));
-
-        // Pulsante per esplorare
-        Button exploreButton = new Button("Esplora");
-
-        exploreButton.setPrefSize(200, 45);
-        exploreButton.setFont(Font.font("Serif", 18));
-        exploreButton.setTextFill(Color.web("#F3E5C8"));
-        exploreButton.setBackground(new javafx.scene.layout.Background(
-                new javafx.scene.layout.BackgroundFill(
-                        Color.web("#80603C"),
-                        new javafx.scene.layout.CornerRadii(8),
-                        Insets.EMPTY
-                )
-        ));
-
-        // Pulsante per salvare la partita
-        Button saveButton = new Button("Salva partita");
-
-        saveButton.setPrefSize(200, 45);
-        saveButton.setFont(Font.font("Serif", 18));
-        saveButton.setTextFill(Color.web("#F3E5C8"));
-        saveButton.setBackground(new javafx.scene.layout.Background(
-                new javafx.scene.layout.BackgroundFill(
-                        Color.web("#80603C"),
-                        new javafx.scene.layout.CornerRadii(8),
-                        Insets.EMPTY
-                )
-        ));
-
-        // Gestione delle operazioni di gioco
-        GameManager gameManager = new GameManager();
-
-        // Gestione del salvataggio della partita
-        GameSaver gameSaver = new GameSaver();
+        Label statusLabel = new Label(
+                "Esplora il tempio e scopri i suoi segreti."
+        );
+        statusLabel.setTextFill(gold);
+        statusLabel.setFont(Font.font("Serif", FontWeight.BOLD, 13));
+        statusLabel.setWrapText(true);
 
         saveButton.setOnAction(event -> {
-
             try {
-                GameSaveData saveData = gameManager.createSaveData(game);
-
-                gameSaver.save(saveData, "partita.json");
-
-                message.setText("Partita salvata correttamente!");
-
+                GameSaveData data = gameManager.createSaveData(game);
+                gameSaver.save(data, "partita.json");
+                statusLabel.setText("Partita salvata!");
             } catch (IOException e) {
-
-                message.setText("Errore durante il salvataggio della partita.");
+                statusLabel.setText("Errore nel salvataggio.");
                 e.printStackTrace();
             }
         });
 
-        // Raccolta degli oggetti
-        collectButton.setOnAction(event -> {
+        HBox header = new HBox(25, title, roomTitle, saveButton);
+        header.setAlignment(Pos.CENTER_LEFT);
+        header.setPadding(new Insets(12, 18, 12, 18));
+        header.setBackground(new Background(
+                new BackgroundFill(dark, new CornerRadii(10), Insets.EMPTY)
+        ));
 
-            if (game.getCurrentRoom().getItems().isEmpty()) {
+        HBox.setHgrow(roomTitle, Priority.ALWAYS);
+        layout.setTop(header);
 
-                message.setText("Non ci sono oggetti da raccogliere.");
+        // SCENA CENTRALE
+        StackPane sceneArea = new StackPane();
 
-            } else {
+        Pane hotspotsLayer = new Pane();
+        hotspotsLayer.setPickOnBounds(false);
 
-                gameManager.collectItems(game);
+        sceneArea.getChildren().add(hotspotsLayer);
 
-                message.setText("Hai raccolto un oggetto!");
+        VBox.setVgrow(sceneArea, Priority.ALWAYS);
+        layout.setCenter(sceneArea);
 
-                StringBuilder inventoryText = new StringBuilder(
-                        "Inventario: "
+        // PANNELLO ENIGMA
+        VBox puzzlePanel = new VBox(12);
+        puzzlePanel.setPadding(new Insets(22));
+        puzzlePanel.setMaxWidth(390);
+        puzzlePanel.setAlignment(Pos.CENTER);
+
+        puzzlePanel.setBackground(new Background(
+                new BackgroundFill(
+                        Color.rgb(23, 35, 43, 0.96),
+                        new CornerRadii(14),
+                        Insets.EMPTY
+                )
+        ));
+
+        Label puzzleTitle = new Label("✧ ENIGMA DEL TEMPIO ✧");
+        puzzleTitle.setFont(Font.font("Serif", FontWeight.BOLD, 19));
+        puzzleTitle.setTextFill(gold);
+
+        Label puzzleDescription = new Label();
+        puzzleDescription.setWrapText(true);
+        puzzleDescription.setTextFill(cream);
+        puzzleDescription.setFont(Font.font("Serif", 15));
+
+        TextField answerField = new TextField();
+        answerField.setPromptText("Inserisci la risposta...");
+
+        Button solveButton = createButton("Conferma risposta", blue);
+
+        Label puzzleFeedback = new Label();
+        puzzleFeedback.setTextFill(gold);
+        puzzleFeedback.setWrapText(true);
+
+        puzzlePanel.getChildren().addAll(
+                puzzleTitle,
+                puzzleDescription,
+                answerField,
+                solveButton,
+                puzzleFeedback
+        );
+
+        puzzlePanel.setVisible(false);
+        puzzlePanel.setManaged(false);
+
+        StackPane.setAlignment(puzzlePanel, Pos.CENTER);
+        sceneArea.getChildren().add(puzzlePanel);
+
+        // INVENTARIO INFERIORE
+        Label inventoryTitle = new Label("🎒");
+        inventoryTitle.setFont(Font.font(22));
+
+        FlowPane inventorySlots = new FlowPane(8, 5);
+        inventorySlots.setAlignment(Pos.CENTER_LEFT);
+
+        HBox inventoryPanel = new HBox(12,
+                inventoryTitle,
+                inventorySlots
+        );
+
+        inventoryPanel.setAlignment(Pos.CENTER_LEFT);
+        inventoryPanel.setPadding(new Insets(10, 15, 10, 15));
+        inventoryPanel.setBackground(new Background(
+                new BackgroundFill(dark, new CornerRadii(10), Insets.EMPTY)
+        ));
+
+        Button nextRoomButton =
+                createButton("➜ Prosegui", Color.web("#79552C"));
+
+        HBox bottom = new HBox(15,
+                inventoryPanel,
+                statusLabel,
+                nextRoomButton
+        );
+
+        bottom.setAlignment(Pos.CENTER);
+        bottom.setPadding(new Insets(10, 0, 0, 0));
+
+        HBox.setHgrow(inventoryPanel, Priority.ALWAYS);
+        HBox.setHgrow(statusLabel, Priority.ALWAYS);
+
+        layout.setBottom(bottom);
+
+        // AGGIORNAMENTO DELLA SCENA
+        Runnable[] refreshScreen = new Runnable[1];
+
+        refreshScreen[0] = () -> {
+
+            roomTitle.setText(game.getCurrentRoom().getName());
+
+            // INVENTARIO
+            inventorySlots.getChildren().clear();
+
+            for (Item item :
+                    game.getPlayer().getInventory().getItems()) {
+
+                Label icon = new Label(
+                        getItemIcon(item.getName()) + " " + item.getName()
                 );
 
-                for (Item item : game.getPlayer().getInventory().getItems()) {
-                    inventoryText.append(item.getName()).append(", ");
+                icon.setTextFill(cream);
+                icon.setFont(Font.font("Serif", 12));
+                icon.setPadding(new Insets(7));
+                icon.setBackground(new Background(
+                        new BackgroundFill(
+                                Color.rgb(115, 83, 43, 0.85),
+                                new CornerRadii(7),
+                                Insets.EMPTY
+                        )
+                ));
+
+                inventorySlots.getChildren().add(icon);
+            }
+
+            if (inventorySlots.getChildren().isEmpty()) {
+                Label empty = new Label("Inventario vuoto");
+                empty.setTextFill(cream);
+                inventorySlots.getChildren().add(empty);
+            }
+
+            // OGGETTI CLICCABILI NELLA SCENA
+            hotspotsLayer.getChildren().clear();
+
+            int position = 0;
+
+            for (Item item : game.getCurrentRoom().getItems()) {
+
+                Button objectButton = createButton(
+                        getItemIcon(item.getName()),
+                        Color.TRANSPARENT
+                );
+
+                objectButton.setFont(Font.font("Serif", 38));
+                objectButton.setPrefSize(75, 75);
+                objectButton.setOpacity(0.85);
+
+                objectButton.setTooltip(
+                        new Tooltip("Esamina")
+                );
+
+                objectButton.setPrefSize(125, 85);
+                objectButton.setWrapText(true);
+                objectButton.setTooltip(
+                        new Tooltip("Clicca per raccogliere")
+                );
+
+                objectButton.setCursor(Cursor.HAND);
+
+                // Posizione degli oggetti nella scena
+                if (item.getName().toLowerCase().contains("frammento")) {
+                    objectButton.setLayoutX(140);
+                    objectButton.setLayoutY(210);
+                } else if (item.getName().toLowerCase().contains("tavoletta")) {
+                    objectButton.setLayoutX(420);
+                    objectButton.setLayoutY(150);
+                } else if (item.getName().toLowerCase().contains("amuleto")) {
+                    objectButton.setLayoutX(650);
+                    objectButton.setLayoutY(220);
+                } else {
+                    objectButton.setLayoutX(180 + position * 150);
+                    objectButton.setLayoutY(190);
                 }
 
-                inventoryText.setLength(inventoryText.length() - 2);
+                objectButton.setOnAction(event -> {
 
-                inventoryLabel.setText(inventoryText.toString());
+                    gameManager.collectItems(game);
 
-                roomItemsLabel.setText(getRoomItemsText(game));
+                    statusLabel.setText(
+                            "Hai raccolto: " + item.getName()
+                    );
 
-                collectButton.setDisable(true);
+                    refreshScreen[0].run();
+                });
+
+                hotspotsLayer.getChildren().add(objectButton);
+                position++;
             }
-        });
 
-        // Verifica della risposta all'enigma
-        solveButton.setOnAction(event -> {
+            // ENIGMA
+            if (game.getCurrentRoom().getPuzzle() != null) {
 
-            boolean solved = gameManager.solveCurrentPuzzle(
-                    game,
-                    answerField.getText().trim()
-            );
+                puzzlePanel.setVisible(true);
+                puzzlePanel.setManaged(true);
 
-            if (solved) {
+                boolean solved = game.getCurrentRoom()
+                        .getPuzzle().isSolved();
 
-                message.setText("Hai risolto l'enigma!");
+                puzzleDescription.setText(
+                        game.getCurrentRoom()
+                                .getPuzzle()
+                                .getDescription()
+                );
 
-                answerField.setDisable(true);
-                solveButton.setDisable(true);
+                answerField.setDisable(solved);
+                solveButton.setDisable(solved);
+
+                if (solved) {
+                    puzzleFeedback.setText("✦ Enigma risolto!");
+                } else {
+                    puzzleFeedback.setText("");
+                }
 
             } else {
+                puzzlePanel.setVisible(false);
+                puzzlePanel.setManaged(false);
+            }
 
-                message.setText("L'enigma non reagisce.");
+            nextRoomButton.setDisable(game.isCompleted());
+
+            if (game.isCompleted()) {
+                statusLabel.setText(
+                        "Hai raggiunto il Santuario nascosto!"
+                );
+            }
+        };
+
+        // RISOLUZIONE ENIGMA
+        solveButton.setOnAction(event -> {
+
+            String answer = answerField.getText().trim();
+
+            if (answer.isEmpty()) {
+                puzzleFeedback.setText("Inserisci una risposta.");
+                return;
+            }
+
+            boolean solved =
+                    gameManager.solveCurrentPuzzle(game, answer);
+
+            if (solved) {
+                puzzleFeedback.setText(
+                        "✦ Risposta corretta! Il passaggio è aperto."
+                );
+
+                answerField.clear();
+                refreshScreen[0].run();
+
+            } else {
+                puzzleFeedback.setText(
+                        "Risposta errata oppure oggetto necessario mancante."
+                );
             }
         });
 
-        // Gestione dell'esplorazione
-        exploreButton.setOnAction(event -> {
+        // AVANZAMENTO
+        nextRoomButton.setOnAction(event -> {
 
             boolean moved = gameManager.moveToNextRoom(game);
 
             if (moved) {
-
-                roomName.setText(game.getCurrentRoom().getName());
-
-                description.setText(game.getCurrentRoom().getDescription());
-
-                roomItemsLabel.setText(getRoomItemsText(game));
-
-                message.setText("");
-
-                answerField.clear();
-                answerField.setDisable(false);
-                solveButton.setDisable(false);
-
-                collectButton.setDisable(
-                        game.getCurrentRoom().getItems().isEmpty()
+                statusLabel.setText(
+                        "Sei entrato in una nuova area del tempio."
                 );
 
-                if (game.getCurrentRoom().getPuzzle() != null) {
-
-                    puzzleLabel.setText(
-                            game.getCurrentRoom().getPuzzle().getDescription()
-                    );
-
-                    puzzleLabel.setVisible(true);
-                    puzzleLabel.setManaged(true);
-
-                    answerField.setVisible(true);
-                    answerField.setManaged(true);
-
-                    solveButton.setVisible(true);
-                    solveButton.setManaged(true);
-
-                } else {
-
-                    puzzleLabel.setVisible(false);
-                    puzzleLabel.setManaged(false);
-
-                    answerField.setVisible(false);
-                    answerField.setManaged(false);
-
-                    solveButton.setVisible(false);
-                    solveButton.setManaged(false);
-                }
-
-                if (game.isCompleted()) {
-
-                    exploreButton.setText("Avventura completata");
-                    exploreButton.setDisable(true);
-
-                    message.setText(
-                            "Complimenti! Hai raggiunto il Santuario nascosto "
-                                    + "e completato l'esplorazione del tempio!"
-                    );
-                }
+                answerField.clear();
+                refreshScreen[0].run();
 
             } else {
-
-                message.setText(
-                        "Devi risolvere l'enigma prima di proseguire!"
+                statusLabel.setText(
+                        "Devi risolvere l'enigma prima di proseguire."
                 );
             }
         });
 
-        // Organizzazione delle informazioni
-        VBox information = new VBox(20);
-        information.setAlignment(Pos.CENTER);
-        information.setPadding(new Insets(30));
+        refreshScreen[0].run();
 
-        information.getChildren().addAll(
-                roomName,
-                description,
-                roomItemsLabel,
-                playerName,
-                inventoryLabel,
-                message,
-                puzzleLabel,
-                answerField,
-                solveButton,
-                collectButton,
-                exploreButton,
-                saveButton
-        );
-
-        // Composizione della schermata
+        // COMPOSIZIONE FINALE
         StackPane root = new StackPane();
 
         root.getChildren().addAll(
                 background,
                 overlay,
-                information
+                layout
         );
 
         return root;
     }
 
-    // Recupera il testo degli oggetti presenti nella stanza
-    private String getRoomItemsText(Game game) {
+    private Button createButton(String text, Color color) {
 
-        if (game.getCurrentRoom().getItems().isEmpty()) {
-            return "Oggetti nella stanza: nessuno";
-        }
+        Button button = new Button(text);
 
-        StringBuilder text = new StringBuilder(
-                "Oggetti nella stanza: "
-        );
+        button.setFont(Font.font("Serif", FontWeight.BOLD, 13));
+        button.setTextFill(cream);
+        button.setPadding(new Insets(12, 16, 12, 16));
 
-        for (Item item : game.getCurrentRoom().getItems()) {
-            text.append(item.getName()).append(", ");
-        }
+        button.setBackground(new Background(
+                new BackgroundFill(
+                        color,
+                        new CornerRadii(9),
+                        Insets.EMPTY
+                )
+        ));
 
-        text.setLength(text.length() - 2);
+        button.setCursor(Cursor.HAND);
 
-        return text.toString();
+        return button;
     }
-    // Recupera il testo degli oggetti presenti nell'inventario
-    private String getInventoryText(Game game) {
 
-        if (game.getPlayer().getInventory().getItems().isEmpty()) {
-            return "Inventario: vuoto";
+    private String getItemIcon(String name) {
+
+        String normalized = name.toLowerCase();
+
+        if (normalized.contains("frammento")) {
+            return "🪨";
         }
 
-        StringBuilder text = new StringBuilder("Inventario: ");
-
-        for (Item item : game.getPlayer().getInventory().getItems()) {
-            text.append(item.getName()).append(", ");
+        if (normalized.contains("tavoletta")) {
+            return "📜";
         }
 
-        text.setLength(text.length() - 2);
+        if (normalized.contains("amuleto")) {
+            return "🔱";
+        }
 
-        return text.toString();
+        return "✦";
     }
 }

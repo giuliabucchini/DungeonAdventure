@@ -1,6 +1,7 @@
 
 package it.unicam.cs.mpgc.rpg125904.presentation;
 
+import com.google.gson.JsonParseException;
 import it.unicam.cs.mpgc.rpg125904.application.GameManager;
 import it.unicam.cs.mpgc.rpg125904.domain.Game;
 import it.unicam.cs.mpgc.rpg125904.persistence.GameLoader;
@@ -26,11 +27,12 @@ import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class GameWindow extends Application {
 
     private Stage primaryStage;
-
     private final GameManager gameManager = new GameManager();
 
     @Override
@@ -38,7 +40,6 @@ public class GameWindow extends Application {
 
         primaryStage = stage;
 
-        // Caricamento dello sfondo
         Image image = new Image(
                 getClass().getResourceAsStream("/images/temple.png")
         );
@@ -47,53 +48,54 @@ public class GameWindow extends Application {
         background.setFitWidth(900);
         background.setFitHeight(600);
         background.setPreserveRatio(false);
+        background.setMouseTransparent(true);
 
-        // Livello scuro sopra lo sfondo
         Rectangle overlay = new Rectangle(900, 600);
         overlay.setFill(Color.rgb(20, 15, 10, 0.55));
+        overlay.setMouseTransparent(true);
 
-        // Titolo del gioco
         Label title = new Label("DUNGEON ADVENTURE");
         title.setFont(Font.font("Serif", FontWeight.BOLD, 42));
         title.setTextFill(Color.web("#E4C17A"));
 
-        // Sottotitolo
         Label subtitle = new Label("Il tempio dimenticato");
         subtitle.setFont(Font.font("Serif", 24));
         subtitle.setTextFill(Color.web("#F3E5C8"));
 
-        // Messaggio per eventuali errori
         Label message = new Label("");
         message.setFont(Font.font("Serif", 16));
         message.setTextFill(Color.web("#E4C17A"));
 
-        // Pulsante nuova partita
         Button newGameButton = new Button("Nuova partita");
         styleButton(newGameButton);
 
-        // Pulsante carica partita
         Button loadGameButton = new Button("Carica partita");
         styleButton(loadGameButton);
 
-        // Pulsante esci
         Button exitButton = new Button("Esci");
         styleButton(exitButton);
 
-        // Avvio di una nuova partita
         newGameButton.setOnAction(event -> {
-
-            Game game = gameManager.startNewGame("Esploratore");
-
-            showGameScreen(game);
+            try {
+                Game game = gameManager.startNewGame("Esploratore");
+                showGameScreen(game);
+            } catch (Exception e) {
+                message.setText("Impossibile avviare una nuova partita.");
+                e.printStackTrace();
+            }
         });
 
-        // Caricamento di una partita salvata
         loadGameButton.setOnAction(event -> {
 
+            Path savePath = Path.of("partita.json");
+
+            if (!Files.exists(savePath)) {
+                message.setText("Non esiste ancora una partita salvata.");
+                return;
+            }
+
             try {
-
                 GameLoader gameLoader = new GameLoader();
-
                 GameSaveData saveData = gameLoader.load("partita.json");
 
                 if (saveData == null) {
@@ -102,22 +104,17 @@ public class GameWindow extends Application {
                 }
 
                 Game game = gameManager.restoreGame(saveData);
-
                 showGameScreen(game);
 
-            } catch (IOException e) {
-
-                message.setText("Nessun salvataggio trovato.");
+            } catch (IOException | JsonParseException | IllegalArgumentException e) {
+                message.setText("Il file di salvataggio non è valido.");
                 e.printStackTrace();
             }
         });
 
-        // Chiusura del gioco
         exitButton.setOnAction(event -> primaryStage.close());
 
-        // Organizzazione degli elementi
         VBox menu = new VBox(20);
-
         menu.setAlignment(Pos.CENTER);
         menu.setPadding(new Insets(30));
 
@@ -130,14 +127,8 @@ public class GameWindow extends Application {
                 message
         );
 
-        // Composizione della schermata
         StackPane root = new StackPane();
-
-        root.getChildren().addAll(
-                background,
-                overlay,
-                menu
-        );
+        root.getChildren().addAll(background, overlay, menu);
 
         Scene scene = new Scene(root, 900, 600);
 
@@ -147,7 +138,6 @@ public class GameWindow extends Application {
         primaryStage.show();
     }
 
-    // Impostazioni grafiche dei pulsanti
     private void styleButton(Button button) {
 
         button.setPrefSize(220, 45);
@@ -163,7 +153,6 @@ public class GameWindow extends Application {
         ));
     }
 
-    // Apertura della schermata di gioco
     private void showGameScreen(Game game) {
 
         GameScreen gameScreen = new GameScreen();

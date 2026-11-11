@@ -4,5 +4,6 @@
   "inventoryItems": [
     "Frammento di pietra"
   ],
-  "puzzleSolved": false
+  "puzzleSolved": false,
+  "inscriptionsPuzzleSolved": false
 }
