@@ -26,7 +26,16 @@ public class Puzzle {
     }
 
     public boolean checkSolution(String answer) {
-        if (answer.equalsIgnoreCase(solution)) {
+
+        if (answer == null || answer.isBlank()) {
+            return false;
+        }
+
+        if (solved) {
+            return true;
+        }
+
+        if (answer.trim().equalsIgnoreCase(solution.trim())) {
             solved = true;
             return true;
         }

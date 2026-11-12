@@ -23,6 +23,7 @@ public class Game {
     public Room getCurrentRoom() {
         return rooms.get(currentRoomIndex);
     }
+
     public Room getRoom(int index) {
         return rooms.get(index);
     }
@@ -41,6 +42,10 @@ public class Game {
         return currentRoomIndex < rooms.size() - 1;
     }
 
+    public boolean hasPreviousRoom() {
+        return currentRoomIndex > 0;
+    }
+
     public boolean isCompleted() {
         return !hasNextRoom();
     }
@@ -48,6 +53,12 @@ public class Game {
     public void moveToNextRoom() {
         if (hasNextRoom()) {
             currentRoomIndex++;
+        }
+    }
+
+    public void moveToPreviousRoom() {
+        if (hasPreviousRoom()) {
+            currentRoomIndex--;
         }
     }
 }

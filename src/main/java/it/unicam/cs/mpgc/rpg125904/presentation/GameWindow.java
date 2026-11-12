@@ -41,7 +41,7 @@ public class GameWindow extends Application {
         primaryStage = stage;
 
         Image image = new Image(
-                getClass().getResourceAsStream("/images/temple.png")
+                getClass().getResourceAsStream("/images/rooms/entrance.png")
         );
 
         ImageView background = new ImageView(image);

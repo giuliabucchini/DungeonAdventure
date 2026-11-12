@@ -85,6 +85,10 @@ public class GameManager {
     // Spostamento nella stanza successiva
     public boolean moveToNextRoom(Game game) {
 
+        if (game == null) {
+            return false;
+        }
+
         Puzzle puzzle = game.getCurrentRoom().getPuzzle();
 
         if (puzzle != null && !puzzle.isSolved()) {
@@ -99,13 +103,29 @@ public class GameManager {
 
         return true;
     }
+    // Ritorno alla stanza precedente
+    public boolean moveToPreviousRoom(Game game) {
+
+        if (game == null || !game.hasPreviousRoom()) {
+            return false;
+        }
+
+        game.moveToPreviousRoom();
+
+        return true;
+    }
 
     // Raccolta degli oggetti presenti nella stanza
     public void collectItems(Game game) {
 
+        if (game == null) {
+            return;
+        }
+
         Room currentRoom = game.getCurrentRoom();
 
-        List<Item> itemsToCollect = currentRoom.getItems();
+        List<Item> itemsToCollect =
+                new ArrayList<>(currentRoom.getItems());
 
         for (Item item : itemsToCollect) {
             game.getPlayer().getInventory().addItem(item);
@@ -113,22 +133,66 @@ public class GameManager {
         }
     }
 
+    // Raccolta di un singolo oggetto
+    public boolean collectItem(Game game, Item item) {
+
+        if (game == null || item == null) {
+            return false;
+        }
+
+        Room currentRoom = game.getCurrentRoom();
+
+        if (!currentRoom.getItems().contains(item)) {
+            return false;
+        }
+
+        if (hasItem(game, item.getName())) {
+            return false;
+        }
+
+        game.getPlayer().getInventory().addItem(item);
+        currentRoom.removeItem(item);
+
+        return true;
+    }
+
+    // Controlla se un oggetto è presente nell'inventario
+    private boolean hasItem(Game game, String itemName) {
+
+        if (game == null || itemName == null) {
+            return false;
+        }
+
+        for (Item item :
+                game.getPlayer().getInventory().getItems()) {
+
+            if (item.getName().trim().equalsIgnoreCase(itemName.trim())) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     // Verifica della risposta all'enigma corrente
     public boolean solveCurrentPuzzle(Game game, String answer) {
+
+        if (game == null || answer == null || answer.isBlank()) {
+            return false;
+        }
 
         Room currentRoom = game.getCurrentRoom();
 
         Puzzle puzzle = currentRoom.getPuzzle();
 
-        if (puzzle == null) {
+        if (puzzle == null || puzzle.isSolved()) {
             return false;
         }
 
         // Nella sala delle iscrizioni serve la tavoletta
         if (game.getCurrentRoomIndex() == 1) {
 
-            if (!game.getPlayer().getInventory()
-                    .containsItem("Tavoletta dei geroglifici")) {
+            if (!hasItem(game, "Tavoletta dei geroglifici")) {
                 return false;
             }
         }
@@ -136,13 +200,31 @@ public class GameManager {
         // Nella camera degli enigmi serve il frammento
         if (game.getCurrentRoomIndex() == 2) {
 
-            if (!game.getPlayer().getInventory()
-                    .containsItem("Frammento di pietra")) {
+            if (!hasItem(game, "Frammento di pietra")) {
                 return false;
             }
         }
 
-        return puzzle.checkSolution(answer);
+        return puzzle.checkSolution(answer.trim());
+    }public String getPuzzleRequirementMessage(Game game) {
+
+        if (game == null) {
+            return "";
+        }
+
+        if (game.getCurrentRoomIndex() == 1
+                && !hasItem(game, "Tavoletta dei geroglifici")) {
+
+            return "Ti serve la Tavoletta dei geroglifici per interpretare le iscrizioni.";
+        }
+
+        if (game.getCurrentRoomIndex() == 2
+                && !hasItem(game, "Frammento di pietra")) {
+
+            return "Ti serve il Frammento di pietra per risolvere questo enigma.";
+        }
+
+        return "";
     }
 
     // Creazione dei dati da salvare
@@ -154,16 +236,16 @@ public class GameManager {
             inventoryItems.add(item.getName());
         }
 
-        // Stato del secondo enigma
         Puzzle inscriptionsPuzzle = game.getRoom(1).getPuzzle();
 
         boolean inscriptionsPuzzleSolved =
-                inscriptionsPuzzle != null && inscriptionsPuzzle.isSolved();
+                inscriptionsPuzzle != null
+                        && inscriptionsPuzzle.isSolved();
 
-        // Stato del terzo enigma
         Puzzle puzzle = game.getRoom(2).getPuzzle();
 
-        boolean puzzleSolved = puzzle != null && puzzle.isSolved();
+        boolean puzzleSolved =
+                puzzle != null && puzzle.isSolved();
 
         return new GameSaveData(
                 game.getPlayer().getName(),
@@ -178,16 +260,22 @@ public class GameManager {
     public Game restoreGame(GameSaveData saveData) {
 
         if (saveData == null) {
-            throw new IllegalArgumentException("Salvataggio assente.");
+            throw new IllegalArgumentException(
+                    "Salvataggio assente."
+            );
         }
 
         if (saveData.getPlayerName() == null
                 || saveData.getPlayerName().isBlank()) {
-            throw new IllegalArgumentException("Nome del giocatore non valido.");
+            throw new IllegalArgumentException(
+                    "Nome del giocatore non valido."
+            );
         }
 
         if (saveData.getInventoryItems() == null) {
-            throw new IllegalArgumentException("Inventario non valido.");
+            throw new IllegalArgumentException(
+                    "Inventario non valido."
+            );
         }
 
         Game game = startNewGame(saveData.getPlayerName());
@@ -195,7 +283,9 @@ public class GameManager {
         int roomIndex = saveData.getCurrentRoomIndex();
 
         if (roomIndex < 0 || roomIndex >= 4) {
-            throw new IllegalArgumentException("Stanza non valida.");
+            throw new IllegalArgumentException(
+                    "Stanza non valida."
+            );
         }
 
         game.setCurrentRoomIndex(roomIndex);
@@ -204,7 +294,9 @@ public class GameManager {
         for (String itemName : saveData.getInventoryItems()) {
 
             if (itemName == null || itemName.isBlank()) {
-                throw new IllegalArgumentException("Nome oggetto non valido.");
+                throw new IllegalArgumentException(
+                        "Nome oggetto non valido."
+                );
             }
 
             boolean itemFound = false;
@@ -213,12 +305,14 @@ public class GameManager {
 
                 Room room = game.getRoom(i);
 
-                for (Item item : room.getItems()) {
+                for (Item item :
+                        new ArrayList<>(room.getItems())) {
 
-                    if (item.getName().equalsIgnoreCase(itemName)) {
+                    if (item.getName().equalsIgnoreCase(itemName.trim())) {
 
                         game.getPlayer().getInventory().addItem(item);
                         room.removeItem(item);
+
                         itemFound = true;
                         break;
                     }
