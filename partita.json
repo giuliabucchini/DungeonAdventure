@@ -1,9 +1,15 @@
 {
   "playerName": "Esploratore",
-  "currentRoomIndex": 1,
+  "currentRoomIndex": 2,
   "inventoryItems": [
-    "Frammento di pietra"
+    "Tavoletta dei geroglifici",
+    "Scheggia del sigillo"
   ],
-  "puzzleSolved": false,
-  "inscriptionsPuzzleSolved": false
+  "solvedPuzzles": [
+    false,
+    true,
+    false,
+    false,
+    false
+  ]
 }

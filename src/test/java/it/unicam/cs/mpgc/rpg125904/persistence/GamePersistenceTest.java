@@ -5,11 +5,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+
 import com.google.gson.JsonParseException;
-import java.nio.file.Files;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -25,12 +25,13 @@ class GamePersistenceTest {
         GameSaveData originalData = new GameSaveData(
                 "Esploratore",
                 1,
-                List.of("Frammento di pietra"),
-                false
+                List.of("Scheggia del sigillo"),
+                List.of(false, false, false, false, false)
         );
 
         // Crea il percorso del file
-        String fileName = tempDir.resolve("partita.json").toString();
+        String fileName =
+                tempDir.resolve("partita.json").toString();
 
         // Salva i dati
         GameSaver saver = new GameSaver();
@@ -42,14 +43,28 @@ class GamePersistenceTest {
 
         // Verifica che i dati siano stati conservati
         assertNotNull(loadedData);
-        assertEquals("Esploratore", loadedData.getPlayerName());
-        assertEquals(1, loadedData.getCurrentRoomIndex());
+
         assertEquals(
-                List.of("Frammento di pietra"),
+                "Esploratore",
+                loadedData.getPlayerName()
+        );
+
+        assertEquals(
+                1,
+                loadedData.getCurrentRoomIndex()
+        );
+
+        assertEquals(
+                List.of("Scheggia del sigillo"),
                 loadedData.getInventoryItems()
         );
-        assertFalse(loadedData.isPuzzleSolved());
+
+        assertEquals(
+                List.of(false, false, false, false, false),
+                loadedData.getSolvedPuzzles()
+        );
     }
+
     @Test
     void shouldThrowExceptionWhenSaveFileIsInvalid() throws IOException {
 
@@ -60,12 +75,12 @@ class GamePersistenceTest {
 
         GameLoader gameLoader = new GameLoader();
 
-        // Verifica che il caricamento generi un'eccezione
         assertThrows(
                 JsonParseException.class,
                 () -> gameLoader.load(file.toString())
         );
     }
+
     @Test
     void shouldThrowExceptionWhenSaveFileDoesNotExist() {
 
@@ -79,4 +94,3 @@ class GamePersistenceTest {
         );
     }
 }
-

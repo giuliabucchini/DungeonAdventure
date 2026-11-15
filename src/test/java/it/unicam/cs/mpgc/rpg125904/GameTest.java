@@ -33,9 +33,10 @@ class GameTest {
         game.moveToNextRoom();
         game.moveToNextRoom();
         game.moveToNextRoom();
+        game.moveToNextRoom();
 
         assertEquals(
-                "Santuario nascosto",
+                "Corridoio del santuario",
                 game.getCurrentRoom().getName()
         );
 
@@ -52,14 +53,16 @@ class GameTest {
         game.moveToNextRoom();
         game.moveToNextRoom();
         game.moveToNextRoom();
+        game.moveToNextRoom();
 
         game.moveToNextRoom();
 
         assertEquals(
-                "Santuario nascosto",
+                "Corridoio del santuario",
                 game.getCurrentRoom().getName()
         );
 
+        assertFalse(game.hasNextRoom());
         assertTrue(game.isCompleted());
     }
 }
