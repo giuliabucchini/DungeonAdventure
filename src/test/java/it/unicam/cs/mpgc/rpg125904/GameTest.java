@@ -25,7 +25,7 @@ class GameTest {
     }
 
     @Test
-    void shouldCompleteAdventureAfterLastRoom() {
+    void shouldReachLastRoomWithoutCompletingAdventure() {
 
         GameManager gameManager = new GameManager();
         Game game = gameManager.startNewGame("Esploratore");
@@ -41,7 +41,7 @@ class GameTest {
         );
 
         assertFalse(game.hasNextRoom());
-        assertTrue(game.isCompleted());
+        assertFalse(game.isCompleted());
     }
 
     @Test
@@ -63,6 +63,9 @@ class GameTest {
         );
 
         assertFalse(game.hasNextRoom());
+        assertFalse(game.isCompleted());
+
+        game.setCompleted(true);
         assertTrue(game.isCompleted());
     }
 }

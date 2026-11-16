@@ -61,7 +61,11 @@ public class GameManager {
         ));
 
         inscriptions.setPuzzle(new Puzzle(
-                "L'enigma delle iscrizioni: sorge ogni mattina e illumina il deserto. Che cosa è?",
+                "La tavoletta ti permette di leggere l'iscrizione completa:\n\n"
+                        + "«Quando la notte si ritira, torno a nascere all'orizzonte.\n"
+                        + "Non ho voce, eppure risveglio il deserto;\n"
+                        + "non ho mani, eppure rivesto le dune d'oro.\n"
+                        + "Sono il primo custode del tempio. Chi sono?»",
                 "sole"
         ));
 
@@ -75,7 +79,11 @@ public class GameManager {
         );
 
         puzzleChamber.setPuzzle(new Puzzle(
-                "Per attivare l'altare devi pronunciare il nome della scheggia che custodisce il sigillo del tempio.",
+                "Sull'altare compare una seconda iscrizione:\n\n"
+                        + "«Non sono una chiave, eppure apro la via.\n"
+                        + "Non sono una fiamma, eppure risveglio la pietra.\n"
+                        + "Sono nata dal sigillo spezzato e porto ancora il suo simbolo.\n"
+                        + "Quale oggetto hai trovato nella Sala delle iscrizioni?»",
                 SEAL_FRAGMENT
         ));
 
@@ -118,11 +126,6 @@ public class GameManager {
         );
 
         sanctuaryCorridor.addItem(new Item(
-                "Amuleto dorato",
-                "Un antico amuleto decorato con simboli egizi."
-        ));
-
-        sanctuaryCorridor.addItem(new Item(
                 "Ankh",
                 "Il simbolo egizio della vita eterna, scolpito in un piccolo oggetto."
         ));
@@ -162,6 +165,32 @@ public class GameManager {
         }
 
         game.moveToPreviousRoom();
+        return true;
+    }
+
+    /**
+     * Completa l'avventura usando l'Ankh sull'altare del santuario.
+     */
+    public boolean completeFinale(Game game) {
+
+        if (game == null
+                || game.getCurrentRoomIndex() != 4
+                || game.isCompleted()
+                || !hasItem(game, "Ankh")) {
+            return false;
+        }
+
+        Puzzle inscriptionsPuzzle = game.getRoom(1).getPuzzle();
+        Puzzle altarPuzzle = game.getRoom(2).getPuzzle();
+
+        if (inscriptionsPuzzle == null
+                || altarPuzzle == null
+                || !inscriptionsPuzzle.isSolved()
+                || !altarPuzzle.isSolved()) {
+            return false;
+        }
+
+        game.setCompleted(true);
         return true;
     }
 
@@ -276,7 +305,8 @@ public class GameManager {
                 game.getPlayer().getName(),
                 game.getCurrentRoomIndex(),
                 inventoryItems,
-                solvedPuzzles
+                solvedPuzzles,
+                game.isCompleted()
         );
     }
 
@@ -343,6 +373,8 @@ public class GameManager {
                 puzzle.setSolved(Boolean.TRUE.equals(solvedPuzzles.get(i)));
             }
         }
+
+        game.setCompleted(saveData.isCompleted());
 
         return game;
     }

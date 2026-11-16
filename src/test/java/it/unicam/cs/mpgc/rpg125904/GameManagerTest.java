@@ -96,7 +96,7 @@ class GameManagerTest {
         GameSaveData saveData = new GameSaveData(
                 "Esploratore",
                 2,
-                List.of("Scheggia del sigillo"),
+                List.of("Tavoletta dei geroglifici", "Scheggia del sigillo"),
                 List.of(false, false, true, false, false)
         );
 
@@ -115,8 +115,8 @@ class GameManagerTest {
 
         assertTrue(game.getRoom(2).getPuzzle().isSolved());
 
-        // La tavoletta iniziale è stata raccolta nella partita salvata
-        assertFalse(game.getRoom(0).getItems().isEmpty());
+        // La tavoletta iniziale è presente nell'inventario e non più nella stanza
+        assertTrue(game.getRoom(0).getItems().isEmpty());
     }
 
     @Test
@@ -191,4 +191,43 @@ class GameManagerTest {
                 restoredGame.getRoom(4).getName()
         );
     }
+
+
+    @Test
+    void shouldCompleteAdventureOnlyAfterUsingTheAnkh() {
+
+        GameManager gameManager = new GameManager();
+        Game game = gameManager.startNewGame("Esploratore");
+
+        gameManager.collectItems(game);
+        assertTrue(gameManager.moveToNextRoom(game));
+
+        gameManager.collectItems(game);
+        assertTrue(gameManager.solveCurrentPuzzle(game, "sole"));
+        assertTrue(gameManager.moveToNextRoom(game));
+
+        assertTrue(gameManager.solveCurrentPuzzle(
+                game,
+                "Scheggia del sigillo"
+        ));
+        assertTrue(gameManager.moveToNextRoom(game));
+
+        gameManager.collectItems(game);
+        assertTrue(gameManager.moveToNextRoom(game));
+
+        assertEquals(4, game.getCurrentRoomIndex());
+        assertFalse(game.isCompleted());
+        assertFalse(gameManager.completeFinale(game));
+
+        gameManager.collectItems(game);
+        assertTrue(gameManager.completeFinale(game));
+        assertTrue(game.isCompleted());
+
+        Game restored = gameManager.restoreGame(
+                gameManager.createSaveData(game)
+        );
+        assertTrue(restored.isCompleted());
+        assertEquals(4, restored.getCurrentRoomIndex());
+    }
+
 }

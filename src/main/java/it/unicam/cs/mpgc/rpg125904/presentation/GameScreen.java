@@ -26,6 +26,7 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
+import javafx.scene.text.TextAlignment;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -278,7 +279,7 @@ public class GameScreen {
         inspectionPanel = new VBox(12);
         inspectionPanel.setAlignment(Pos.CENTER);
         inspectionPanel.setPadding(new Insets(20));
-        inspectionPanel.setMaxWidth(480);
+        inspectionPanel.setMaxWidth(760);
         inspectionPanel.setMaxHeight(580);
 
         inspectionPanel.setBackground(new Background(
@@ -305,9 +306,15 @@ public class GameScreen {
         closeupImage.setFitHeight(220);
         closeupImage.setPreserveRatio(true);
 
-        inspectionDescription = styledLabel("", 14, cream, false);
+        inspectionDescription = styledLabel("", 18, cream, false);
         inspectionDescription.setWrapText(true);
-        inspectionDescription.setMaxWidth(400);
+        inspectionDescription.setMinHeight(Region.USE_PREF_SIZE);
+        inspectionDescription.setMaxHeight(Region.USE_PREF_SIZE);
+        inspectionDescription.setMaxWidth(700);
+        inspectionDescription.setPrefWidth(700);
+        inspectionDescription.setTextAlignment(TextAlignment.CENTER);
+        inspectionDescription.setBackground(Background.EMPTY);
+        inspectionDescription.setBorder(Border.EMPTY);
 
         interactionContent = new VBox(10);
         interactionContent.setAlignment(Pos.CENTER);
@@ -336,7 +343,7 @@ public class GameScreen {
         buildHotspots(roomIndex);
         refreshInventory();
 
-        previousButton.setDisable(!currentGame.hasPreviousRoom());
+        previousButton.setDisable(currentGame.isCompleted() || !currentGame.hasPreviousRoom());
 
         Puzzle puzzle = currentGame.getCurrentRoom().getPuzzle();
 
@@ -347,7 +354,8 @@ public class GameScreen {
         );
 
         if (currentGame.isCompleted()) {
-            statusLabel.setText("Hai raggiunto il Santuario nascosto.");
+            statusLabel.setText("Il sigillo è stato attivato. Avventura completata.");
+            Platform.runLater(this::showEndingPanel);
         }
 
         Platform.runLater(() -> {
@@ -481,6 +489,15 @@ public class GameScreen {
                         68
                 );
 
+                addItemHotspot(
+                        "Libro rituale",
+                        "Un volume impolverato che descrive i rituali dei custodi. "
+                                + "Alcune pagine sono consumate, ma i disegni mostrano "
+                                + "un Ankh posto al centro di un altare.",
+                        0.43,
+                        0.68,
+                        82
+                );
 
                 addItemHotspot(
                         "Corda",
@@ -496,6 +513,33 @@ public class GameScreen {
                         0.44,
                         0.52,
                         80
+                );
+
+                addDetailHotspot(
+                        "Il murale del guardiano",
+                        "Il dipinto raffigura un custode davanti alla porta del santuario. "
+                                + "La sua mano indica un simbolo circolare: il sigillo non "
+                                + "si apre con la forza, ma attraverso un'offerta rituale.",
+                        0.18,
+                        0.30
+                );
+
+                addDetailHotspot(
+                        "La stele inclinata",
+                        "La stele racconta che l'ultimo custode affidò all'Ankh "
+                                + "il compito di mantenere chiuso il santuario. "
+                                + "Il simbolo inciso coincide con quello del sigillo.",
+                        0.78,
+                        0.40
+                );
+
+                addDetailHotspot(
+                        "Il tavolo degli strumenti",
+                        "Restano vasi e strumenti usati durante le cerimonie. "
+                                + "La polvere attorno a un piccolo spazio circolare "
+                                + "sembra essere stata rimossa di recente.",
+                        0.62,
+                        0.57
                 );
             }
 
@@ -516,6 +560,15 @@ public class GameScreen {
                         0.82,
                         0.87,
                         68
+                );
+
+                addFinaleHotspot(
+                        "L'altare del sigillo",
+                        "Al centro dell'altare c'è un incavo a forma di Ankh. Il Libro "
+                                + "rituale spiega che il simbolo della vita eterna deve essere "
+                                + "collocato qui per risvegliare il sigillo.",
+                        0.31,
+                        0.67
                 );
             }
 
@@ -633,6 +686,7 @@ public class GameScreen {
                 description,
                 item,
                 false,
+                false,
                 x,
                 y
         );
@@ -667,6 +721,7 @@ public class GameScreen {
                 description,
                 null,
                 true,
+                false,
                 x,
                 y
         );
@@ -701,6 +756,7 @@ public class GameScreen {
                 description,
                 null,
                 false,
+                false,
                 x,
                 y
         );
@@ -717,6 +773,38 @@ public class GameScreen {
         activeHotspots.add(
                 new HotspotView(point, x, y, 42, 42)
         );
+    }
+
+    /**
+     * Aggiunge il punto interattivo che permette di completare l'avventura.
+     */
+    private void addFinaleHotspot(
+            String title,
+            String description,
+            double x,
+            double y
+    ) {
+        StackPane point = createGlowingMarker(54);
+
+        Hotspot hotspot = new Hotspot(
+                title,
+                description,
+                null,
+                false,
+                true,
+                x,
+                y
+        );
+
+        point.setOnMouseClicked(event -> {
+            inspectHotspot(hotspot);
+            event.consume();
+        });
+
+        Tooltip.install(point, new Tooltip("Esamina l'altare"));
+
+        hotspotLayer.getChildren().add(point);
+        activeHotspots.add(new HotspotView(point, x, y, 54, 54));
     }
 
     /**
@@ -1004,10 +1092,99 @@ public class GameScreen {
                 );
             }
 
+        } else if (hotspot.finale) {
+            showSceneZoom(hotspot);
+
+            if (currentGame.isCompleted()) {
+                inspectionDescription.setText(
+                        "Il sigillo è già stato attivato. Il tempio è finalmente libero."
+                );
+            } else {
+                inspectionDescription.setText(
+                        "L'altare presenta un incavo a forma di Ankh. Hai già raccolto "
+                                + "il simbolo della vita eterna? Premi il pulsante qui sotto "
+                                + "per collocarlo al centro dell'altare e attivare il sigillo."
+                );
+                inspectionDescription.setWrapText(true);
+                inspectionDescription.setMaxWidth(440);
+
+                Button finaleButton = createButton(
+                        "Inserisci l'Ankh nell'altare",
+                        Color.web("#79552C")
+                );
+
+                Label finaleFeedback = styledLabel(
+                        "L'Ankh verrà utilizzato per attivare il sigillo.",
+                        13,
+                        gold,
+                        false
+                );
+                finaleFeedback.setWrapText(true);
+
+                finaleButton.setOnAction(event -> {
+                    if (gameManager.completeFinale(currentGame)) {
+                        closeInspection();
+                        statusLabel.setText("Il sigillo si illumina. Hai completato l'avventura!");
+                        refreshScreen();
+                        showEndingPanel();
+                    } else {
+                        finaleFeedback.setText(
+                                "Non hai ancora l'Ankh. Esamina il corridoio e raccogli il simbolo della vita eterna."
+                        );
+                    }
+                });
+
+                interactionContent.getChildren().addAll(
+                        finaleButton,
+                        finaleFeedback
+                );
+            }
+
         } else {
             showSceneZoom(hotspot);
         }
 
+        inspectionPanel.setManaged(true);
+        inspectionPanel.setVisible(true);
+        inspectionPanel.toFront();
+    }
+
+    /**
+     * Mostra la conclusione narrativa dell'avventura.
+     */
+    private void showEndingPanel() {
+        if (inspectionPanel == null || currentGame == null || !currentGame.isCompleted()) {
+            return;
+        }
+
+        inspectionTitle.setText("AVVENTURA COMPLETATA");
+        inspectionDescription.setText(
+                "L'Ankh si incastra nell'altare. Una luce attraversa le pareti "
+                        + "e il sigillo si risveglia, rivelando il santuario nascosto.\n\n"
+                        + "Il tempio non custodiva un tesoro da conquistare, ma una memoria "
+                        + "da proteggere. Hai ricomposto gli indizi, superato le prove e "
+                        + "raggiunto il cuore del tempio. La tua esplorazione si conclude qui."
+        );
+        inspectionDescription.setMaxWidth(410);
+
+        closeupImage.setImage(null);
+        closeupImage.setViewport(null);
+
+        interactionContent.getChildren().clear();
+
+        Button restartButton = createButton(
+                "Ricomincia l'avventura",
+                Color.web("#79552C")
+        );
+        restartButton.setOnAction(event -> {
+            String playerName = currentGame.getPlayer().getName();
+            currentGame = gameManager.startNewGame(playerName);
+            closeInspection();
+            statusLabel.setText("Una nuova esplorazione sta per cominciare.");
+            refreshScreen();
+        });
+
+        interactionContent.getChildren().add(restartButton);
         inspectionPanel.setManaged(true);
         inspectionPanel.setVisible(true);
         inspectionPanel.toFront();
@@ -1337,6 +1514,7 @@ public class GameScreen {
         private final String description;
         private final Item item;
         private final boolean puzzle;
+        private final boolean finale;
 
         private final double x;
         private final double y;
@@ -1346,6 +1524,7 @@ public class GameScreen {
                 String description,
                 Item item,
                 boolean puzzle,
+                boolean finale,
                 double x,
                 double y
         ) {
@@ -1353,6 +1532,7 @@ public class GameScreen {
             this.description = description;
             this.item = item;
             this.puzzle = puzzle;
+            this.finale = finale;
             this.x = x;
             this.y = y;
         }
