@@ -63,8 +63,7 @@ public class GameManager {
         inscriptions.setPuzzle(new Puzzle(
                 "La tavoletta ti permette di leggere l'iscrizione completa:\n\n"
                         + "«Quando la notte si ritira, torno a nascere all'orizzonte.\n"
-                        + "Non ho voce, eppure risveglio il deserto;\n"
-                        + "non ho mani, eppure rivesto le dune d'oro.\n"
+                        + "illumino il deserto;\n"
                         + "Sono il primo custode del tempio. Chi sono?»",
                 "sole"
         ));
@@ -80,14 +79,15 @@ public class GameManager {
 
         puzzleChamber.setPuzzle(new Puzzle(
                 "Sull'altare compare una seconda iscrizione:\n\n"
-                        + "«Non sono una chiave, eppure apro la via.\n"
-                        + "Non sono una fiamma, eppure risveglio la pietra.\n"
-                        + "Sono nata dal sigillo spezzato e porto ancora il suo simbolo.\n"
-                        + "Quale oggetto hai trovato nella Sala delle iscrizioni?»",
+                        + "«Il mio riflesso blu catturerà il tuo sguardo,\n"
+                        + "ma solo pronunciando il mio nome\n"
+                        + "potrai aprire il passaggio."
+                        ,
                 SEAL_FRAGMENT
         ));
 
         rooms.add(puzzleChamber);
+
 
         // STANZA 4 - CAMERA SEGRETA BLU
         Room secretChamber = new Room(
@@ -99,11 +99,6 @@ public class GameManager {
         secretChamber.addItem(new Item(
                 "Chiave antica",
                 "Una chiave di metallo consumata dal tempo. Potrebbe aprire qualcosa nel tempio."
-        ));
-
-        secretChamber.addItem(new Item(
-                "Libro rituale",
-                "Un libro antico che descrive cerimonie e simboli del tempio."
         ));
 
         secretChamber.addItem(new Item(
