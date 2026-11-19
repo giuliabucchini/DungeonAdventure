@@ -11,13 +11,12 @@ import it.unicam.cs.mpgc.rpg125904.persistence.GameSaver;
 import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
-import javafx.geometry.Rectangle2D;
 import javafx.scene.Cursor;
 import javafx.scene.Parent;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.ScrollPane;
-import javafx.scene.image.Image;
+import javafx.scene.control.Tooltip;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
@@ -29,16 +28,12 @@ import java.util.List;
 
 public class GameScreen {
 
-    private HotspotView hotspotView;
-    private InspectionManager inspectionManager;
-
-    private final HotspotManager hotspotManager = new HotspotManager();
-    private final BackgroundImageFactory backgroundImageFactory =
-            new BackgroundImageFactory();
-    private final ItemImageFactory itemImageFactory = new ItemImageFactory();
-
     private final GameManager gameManager = new GameManager();
     private final GameSaver gameSaver = new GameSaver();
+    private final GameImageFactory imageFactory = new GameImageFactory();
+
+    private HotspotManager hotspotManager;
+    private InspectionManager inspectionManager;
 
     private final Color gold = Color.web("#E6BD70");
     private final Color cream = Color.web("#F5E8CF");
@@ -53,7 +48,6 @@ public class GameScreen {
     private Label roomTitle;
 
     private HBox inventorySlots;
-    private InventoryView inventoryView;
     private ScrollPane inventoryScroll;
 
     private Button previousButton;
@@ -70,12 +64,7 @@ public class GameScreen {
         layout.setStyle("-fx-background-color: #100e0b;");
 
         roomTitle = styledLabel("", 20, gold, true);
-        Label gameTitle = styledLabel(
-                "DUNGEON ADVENTURE",
-                18,
-                gold,
-                true
-        );
+        Label gameTitle = styledLabel("DUNGEON ADVENTURE", 18, gold, true);
 
         statusLabel = styledLabel(
                 "Esplora la stanza: alcuni oggetti nascondono qualcosa.",
@@ -113,10 +102,7 @@ public class GameScreen {
 
         sceneContent = new StackPane(background, hotspotLayer);
         sceneContent.setPrefSize(876, 493);
-        sceneContent.setMaxSize(
-                Region.USE_PREF_SIZE,
-                Region.USE_PREF_SIZE
-        );
+        sceneContent.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
 
         background.fitWidthProperty().bind(sceneContent.widthProperty());
         background.fitHeightProperty().bind(sceneContent.heightProperty());
@@ -142,10 +128,53 @@ public class GameScreen {
                 positionHotspots()
         );
 
+        // Pulsante per proseguire.
+        nextButton = createButton("Prosegui →", Color.web("#79552C"));
+        nextButton.setOnAction(event -> {
+            closeInspection();
+
+            if (gameManager.moveToNextRoom(currentGame)) {
+                statusLabel.setText(
+                        "Una nuova area del tempio si apre davanti a te."
+                );
+                refreshScreen();
+            } else {
+                statusLabel.setText(
+                        "Prima devi risolvere il meccanismo che blocca il passaggio."
+                );
+            }
+        });
+
+        inspectionManager = new InspectionManager(
+                gameManager,
+                imageFactory,
+                () -> currentGame,
+                newGame -> currentGame = newGame,
+                sceneArea,
+                background,
+                statusLabel::setText,
+                this::refreshScreen,
+                nextButton
+        );
+
+        hotspotManager = new HotspotManager(
+                hotspotLayer,
+                () -> currentGame,
+                this::findItem,
+                inspectionManager::inspectHotspot,
+                imageFactory
+        );
+
+        sceneArea.getChildren().add(inspectionManager.createPanel());
+        StackPane.setAlignment(
+                inspectionManager.getPanel(),
+                Pos.CENTER
+        );
+
         layout.setCenter(sceneArea);
         BorderPane.setMargin(sceneArea, new Insets(8, 0, 8, 0));
 
-        // Inventario.
+        // Inventario a icone, con scorrimento orizzontale.
         inventorySlots = new HBox(8);
         inventorySlots.setAlignment(Pos.CENTER_LEFT);
         inventorySlots.setPadding(new Insets(2, 4, 2, 4));
@@ -153,12 +182,8 @@ public class GameScreen {
         inventoryScroll = new ScrollPane(inventorySlots);
         inventoryScroll.setFitToHeight(true);
         inventoryScroll.setFitToWidth(false);
-        inventoryScroll.setHbarPolicy(
-                ScrollPane.ScrollBarPolicy.AS_NEEDED
-        );
-        inventoryScroll.setVbarPolicy(
-                ScrollPane.ScrollBarPolicy.NEVER
-        );
+        inventoryScroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        inventoryScroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
         inventoryScroll.setPannable(true);
         inventoryScroll.setPrefViewportHeight(54);
         inventoryScroll.setPrefViewportWidth(300);
@@ -198,75 +223,10 @@ public class GameScreen {
             closeInspection();
 
             if (gameManager.moveToPreviousRoom(currentGame)) {
-                statusLabel.setText(
-                        "Sei tornato nella stanza precedente."
-                );
+                statusLabel.setText("Sei tornato nella stanza precedente.");
                 refreshScreen();
             }
         });
-
-        // Pulsante per proseguire.
-        nextButton = createButton(
-                "Prosegui →",
-                Color.web("#79552C")
-        );
-
-        nextButton.setOnAction(event -> {
-            closeInspection();
-
-            if (gameManager.moveToNextRoom(currentGame)) {
-                statusLabel.setText(
-                        "Una nuova area del tempio si apre davanti a te."
-                );
-                refreshScreen();
-            } else {
-                statusLabel.setText(
-                        "Prima devi risolvere il meccanismo che blocca il passaggio."
-                );
-            }
-        });
-
-        // Gestione delle ispezioni.
-        inspectionManager = new InspectionManager(
-                gameManager,
-                itemImageFactory,
-                backgroundImageFactory,
-                gold,
-                cream,
-                blue,
-                nextButton,
-                message -> statusLabel.setText(message),
-                this::refreshScreen,
-                newGame -> currentGame = newGame
-        );
-
-        sceneArea.getChildren().add(inspectionManager.getPanel());
-        StackPane.setAlignment(
-                inspectionManager.getPanel(),
-                Pos.CENTER
-        );
-
-        // Gestione grafica degli hotspot.
-        hotspotView = new HotspotView(
-                hotspotLayer,
-                hotspotManager,
-                itemImageFactory,
-                this::findItem,
-                hotspot -> inspectionManager.inspectHotspot(
-                        hotspot,
-                        currentGame,
-                        background,
-                        sceneArea
-                )
-        );
-
-        // Gestione grafica dell'inventario.
-        inventoryView = new InventoryView(
-                inventorySlots,
-                itemImageFactory,
-                cream,
-                inspectionManager::showInventoryItem
-        );
 
         HBox footer = new HBox(
                 10,
@@ -325,21 +285,33 @@ public class GameScreen {
         positionHotspots();
     }
 
-    /**
-     * Aggiorna tutti gli elementi della schermata.
-     */
+    private void positionHotspots() {
+        if (hotspotManager == null || sceneContent == null) {
+            return;
+        }
+
+        hotspotManager.positionHotspots(
+                sceneContent.getWidth(),
+                sceneContent.getHeight()
+        );
+    }
+
     private void refreshScreen() {
         int roomIndex = currentGame.getCurrentRoomIndex();
 
         roomTitle.setText(currentGame.getCurrentRoom().getName());
 
-        loadBackground(getBackgroundPath(roomIndex));
-        buildHotspots(roomIndex);
+        imageFactory.loadBackground(
+                imageFactory.getBackgroundPath(roomIndex),
+                background,
+                statusLabel::setText
+        );
+
+        hotspotManager.buildHotspots(roomIndex);
         refreshInventory();
 
         previousButton.setDisable(
-                currentGame.isCompleted()
-                        || !currentGame.hasPreviousRoom()
+                currentGame.isCompleted() || !currentGame.hasPreviousRoom()
         );
 
         Puzzle puzzle = currentGame.getCurrentRoom().getPuzzle();
@@ -351,16 +323,8 @@ public class GameScreen {
         );
 
         if (currentGame.isCompleted()) {
-            statusLabel.setText(
-                    "Il sigillo è stato attivato. Avventura completata."
-            );
-
-            Platform.runLater(() ->
-                    inspectionManager.showEndingPanel(
-                            currentGame,
-                            sceneArea
-                    )
-            );
+            statusLabel.setText("Il sigillo è stato attivato. Avventura completata.");
+            Platform.runLater(inspectionManager::showEndingPanel);
         }
 
         Platform.runLater(() -> {
@@ -373,70 +337,62 @@ public class GameScreen {
     }
 
     /**
-     * Crea gli elementi interattivi della stanza.
-     */
-    private void buildHotspots(int roomIndex) {
-        hotspotLayer.getChildren().clear();
-        hotspotManager.clear();
-
-        List<HotspotDefinition> definitions =
-                RoomHotspotLayout.forRoom(roomIndex);
-
-        for (HotspotDefinition definition : definitions) {
-            switch (definition.type()) {
-                case ITEM -> hotspotView.addItemHotspot(
-                        definition.name(),
-                        definition.description(),
-                        definition.x(),
-                        definition.y(),
-                        definition.size()
-                );
-
-                case DETAIL -> hotspotView.addDetailHotspot(
-                        definition.name(),
-                        definition.description(),
-                        definition.x(),
-                        definition.y()
-                );
-
-                case PUZZLE -> hotspotView.addPuzzleHotspot(
-                        definition.name(),
-                        definition.description(),
-                        definition.x(),
-                        definition.y()
-                );
-
-                case FINALE -> hotspotView.addFinaleHotspot(
-                        definition.name(),
-                        definition.description(),
-                        definition.x(),
-                        definition.y()
-                );
-            }
-        }
-
-        positionHotspots();
-    }
-
-    /**
-     * Posiziona gli hotspot rispetto alle dimensioni effettive della scena.
-     */
-    private void positionHotspots() {
-        if (hotspotManager != null && sceneContent != null) {
-            hotspotManager.positionHotspots(sceneContent);
-        }
-    }
-
-    /**
-     * Aggiorna l'inventario.
+     * Aggiorna l'inventario mostrando solamente le immagini.
      */
     private void refreshInventory() {
-        inventoryView.refresh(currentGame);
+        inventorySlots.getChildren().clear();
+
+        List<Item> items = currentGame.getPlayer()
+                .getInventory()
+                .getItems();
+
+        if (items.isEmpty()) {
+            inventorySlots.getChildren().add(
+                    styledLabel("Vuoto", 12, cream, false)
+            );
+            return;
+        }
+
+        for (Item item : items) {
+            ImageView image = imageFactory.createItemImage(item.getName(), 34);
+
+            if (image == null) {
+                continue;
+            }
+
+            image.setFitWidth(34);
+            image.setFitHeight(34);
+            image.setPreserveRatio(true);
+            image.setMouseTransparent(true);
+
+            Button itemButton = createButton(
+                    "",
+                    Color.rgb(103, 75, 43, 0.95)
+            );
+
+            itemButton.setGraphic(image);
+            itemButton.setContentDisplay(
+                    javafx.scene.control.ContentDisplay.GRAPHIC_ONLY
+            );
+            itemButton.setAlignment(Pos.CENTER);
+            itemButton.setPadding(new Insets(5));
+            itemButton.setMinSize(48, 48);
+            itemButton.setPrefSize(48, 48);
+            itemButton.setMaxSize(48, 48);
+
+            Tooltip.install(
+                    itemButton,
+                    new Tooltip("Clicca per visualizzare l'oggetto")
+            );
+
+            itemButton.setOnAction(
+                    event -> inspectionManager.showInventoryItem(item)
+            );
+
+            inventorySlots.getChildren().add(itemButton);
+        }
     }
 
-    /**
-     * Cerca un oggetto nella stanza corrente.
-     */
     private Item findItem(String name) {
         for (Item item : currentGame.getCurrentRoom().getItems()) {
             if (item.getName().equalsIgnoreCase(name)) {
@@ -448,7 +404,7 @@ public class GameScreen {
     }
 
     private void closeInspection() {
-        inspectionManager.close();
+        inspectionManager.closeInspection();
     }
 
     /**
@@ -456,8 +412,7 @@ public class GameScreen {
      */
     private void saveGame() {
         try {
-            GameSaveData data =
-                    gameManager.createSaveData(currentGame);
+            GameSaveData data = gameManager.createSaveData(currentGame);
 
             gameSaver.save(data, "partita.json");
 
@@ -470,70 +425,6 @@ public class GameScreen {
 
             exception.printStackTrace();
         }
-    }
-
-    /**
-     * Carica lo sfondo della stanza.
-     */
-    private void loadBackground(String path) {
-        Image image = backgroundImageFactory.load(path);
-
-        if (image == null) {
-            background.setImage(null);
-
-            statusLabel.setText(
-                    "Immagine non trovata: " + path
-            );
-
-            return;
-        }
-
-        background.setImage(image);
-        background.setViewport(createWideViewport(image));
-    }
-
-    /**
-     * Ritaglia lo sfondo mantenendo il rapporto 16:9.
-     */
-    private Rectangle2D createWideViewport(Image image) {
-        double imageWidth = image.getWidth();
-        double imageHeight = image.getHeight();
-
-        double targetRatio = 16.0 / 9.0;
-        double imageRatio = imageWidth / imageHeight;
-
-        if (imageRatio > targetRatio) {
-            double croppedWidth = imageHeight * targetRatio;
-            double x = (imageWidth - croppedWidth) / 2.0;
-
-            return new Rectangle2D(
-                    x,
-                    0,
-                    croppedWidth,
-                    imageHeight
-            );
-        }
-
-        double croppedHeight = imageWidth / targetRatio;
-        double y = (imageHeight - croppedHeight) / 2.0;
-
-        return new Rectangle2D(
-                0,
-                y,
-                imageWidth,
-                croppedHeight
-        );
-    }
-
-    private String getBackgroundPath(int roomIndex) {
-        return switch (roomIndex) {
-            case 0 -> "/images/rooms/entrance.png";
-            case 1 -> "/images/rooms/02_archivio_iscrizioni.png";
-            case 2 -> "/images/rooms/puzzle.jpeg";
-            case 3 -> "/images/rooms/04_camera_segreta_blu.png";
-            case 4 -> "/images/rooms/sanctuary.jpeg";
-            default -> "/images/rooms/entrance.png";
-        };
     }
 
     private Button createButton(String text, Color color) {

@@ -1,4 +1,3 @@
-
 package it.unicam.cs.mpgc.rpg125904.presentation;
 
 import it.unicam.cs.mpgc.rpg125904.application.GameManager;
@@ -15,105 +14,123 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.StackPane;
-import javafx.scene.layout.VBox;
+import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
 
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
- * Gestisce i pannelli di ispezione e le interazioni con gli elementi
- * presenti nelle stanze.
+ * Gestisce il pannello di ispezione e le interazioni
+ * con gli elementi presenti nelle stanze.
  */
 public class InspectionManager {
 
     private final GameManager gameManager;
-    private final ItemImageFactory itemImageFactory;
-    private final BackgroundImageFactory backgroundImageFactory;
-
-    private final Color gold;
-    private final Color cream;
-    private final Color blue;
-
+    private final GameImageFactory imageFactory;
+    private final Supplier<Game> gameSupplier;
+    private final Consumer<Game> gameSetter;
+    private final StackPane sceneArea;
+    private final ImageView background;
+    private final Consumer<String> statusSetter;
+    private final Runnable refreshScreen;
     private final Button nextButton;
 
-    private final Consumer<String> statusUpdater;
-    private final Runnable refreshScreen;
-    private final Consumer<Game> restartGame;
+    private final Color gold = Color.web("#E6BD70");
+    private final Color cream = Color.web("#F5E8CF");
+    private final Color blue = Color.web("#18364A");
 
-    private final VBox inspectionPanel;
-    private final Label inspectionTitle;
-    private final Label inspectionDescription;
-    private final ImageView closeupImage;
-    private final VBox interactionContent;
+    private VBox inspectionPanel;
+    private Label inspectionTitle;
+    private Label inspectionDescription;
+    private ImageView closeupImage;
+    private VBox interactionContent;
 
     public InspectionManager(
             GameManager gameManager,
-            ItemImageFactory itemImageFactory,
-            BackgroundImageFactory backgroundImageFactory,
-            Color gold,
-            Color cream,
-            Color blue,
-            Button nextButton,
-            Consumer<String> statusUpdater,
+            GameImageFactory imageFactory,
+            Supplier<Game> gameSupplier,
+            Consumer<Game> gameSetter,
+            StackPane sceneArea,
+            ImageView background,
+            Consumer<String> statusSetter,
             Runnable refreshScreen,
-            Consumer<Game> restartGame) {
-
+            Button nextButton
+    ) {
         this.gameManager = gameManager;
-        this.itemImageFactory = itemImageFactory;
-        this.backgroundImageFactory = backgroundImageFactory;
-
-        this.gold = gold;
-        this.cream = cream;
-        this.blue = blue;
-
-        this.nextButton = nextButton;
-
-        this.statusUpdater = statusUpdater;
+        this.imageFactory = imageFactory;
+        this.gameSupplier = gameSupplier;
+        this.gameSetter = gameSetter;
+        this.sceneArea = sceneArea;
+        this.background = background;
+        this.statusSetter = statusSetter;
         this.refreshScreen = refreshScreen;
-        this.restartGame = restartGame;
+        this.nextButton = nextButton;
+    }
 
-        inspectionPanel = new VBox(12);
+    public VBox createPanel() {
+        inspectionPanel = new VBox(8);
         inspectionPanel.setAlignment(Pos.CENTER);
-        inspectionPanel.setPadding(new Insets(18));
-        inspectionPanel.setMaxWidth(440);
-        inspectionPanel.setStyle(
-                "-fx-background-color: rgba(22,17,13,0.94);" +
-                        "-fx-background-radius: 14;" +
-                        "-fx-border-color: #E6BD70;" +
-                        "-fx-border-radius: 14;" +
-                        "-fx-border-width: 1.5;"
-        );
+        inspectionPanel.setPadding(new Insets(12));
+        inspectionPanel.setMaxWidth(560);
+        inspectionPanel.setMaxHeight(440);
 
-        inspectionTitle = new Label();
-        inspectionTitle.setTextFill(gold);
-        inspectionTitle.setFont(
-                Font.font("Serif", FontWeight.BOLD, 20)
+        inspectionPanel.setBackground(new Background(
+                new BackgroundFill(
+                        Color.rgb(19, 25, 28, 0.98),
+                        new CornerRadii(12),
+                        Insets.EMPTY
+                )
+        ));
+
+        inspectionPanel.setBorder(new Border(
+                new BorderStroke(
+                        gold,
+                        BorderStrokeStyle.SOLID,
+                        new CornerRadii(12),
+                        new BorderWidths(1.2)
+                )
+        ));
+
+        inspectionTitle = InspectionStyleFactory.styledLabel(
+                "",
+                19,
+                gold,
+                true
         );
-        inspectionTitle.setWrapText(true);
-        inspectionTitle.setTextAlignment(TextAlignment.CENTER);
 
         closeupImage = new ImageView();
+        closeupImage.setFitWidth(210);
+        closeupImage.setFitHeight(130);
         closeupImage.setPreserveRatio(true);
-        closeupImage.setSmooth(true);
 
-        inspectionDescription = new Label();
-        inspectionDescription.setTextFill(cream);
-        inspectionDescription.setFont(
-                Font.font("Serif", 14)
+        inspectionDescription = InspectionStyleFactory.styledLabel(
+                "",
+                15,
+                cream,
+                false
         );
+
         inspectionDescription.setWrapText(true);
+        inspectionDescription.setMaxWidth(500);
+        inspectionDescription.setPrefWidth(500);
+        inspectionDescription.setAlignment(Pos.CENTER);
         inspectionDescription.setTextAlignment(TextAlignment.CENTER);
-        inspectionDescription.setMaxWidth(390);
+        inspectionDescription.setBackground(Background.EMPTY);
+        inspectionDescription.setBorder(Border.EMPTY);
 
         interactionContent = new VBox(10);
         interactionContent.setAlignment(Pos.CENTER);
 
-        Button closeButton = createButton("Chiudi", blue);
-        closeButton.setOnAction(event -> close());
+        Button closeButton = InspectionStyleFactory.createButton(
+                "Chiudi",
+                blue,
+                cream
+        );
+
+        closeButton.setOnAction(event -> closeInspection());
 
         inspectionPanel.getChildren().addAll(
                 inspectionTitle,
@@ -125,432 +142,357 @@ public class InspectionManager {
 
         inspectionPanel.setVisible(false);
         inspectionPanel.setManaged(false);
+
+        return inspectionPanel;
     }
 
-    /**
-     * Restituisce il pannello da inserire nella schermata di gioco.
-     */
     public VBox getPanel() {
         return inspectionPanel;
     }
 
-    /**
-     * Mostra le informazioni e le interazioni relative a un hotspot.
-     */
-    public void inspectHotspot(
-            Hotspot hotspot,
-            Game currentGame,
-            ImageView background,
-            StackPane sceneArea) {
+    public void inspectHotspot(HotspotManager.Hotspot hotspot) {
+        Game currentGame = gameSupplier.get();
 
         inspectionTitle.setText(hotspot.title);
-        inspectionTitle.setFont(
-                Font.font("Serif", FontWeight.BOLD, 20)
-        );
+        inspectionDescription.setText(hotspot.description);
+        inspectionDescription.setFont(Font.font("Serif", 15));
+        inspectionDescription.setMaxWidth(500);
+        inspectionDescription.setPrefWidth(500);
+        inspectionDescription.setTextAlignment(TextAlignment.CENTER);
+        inspectionDescription.setAlignment(Pos.CENTER);
+        closeupImage.setManaged(true);
+        closeupImage.setVisible(true);
+        inspectionPanel.setMaxWidth(560);
+        inspectionPanel.setPadding(new Insets(12));
+        inspectionPanel.setSpacing(8);
 
-        inspectionDescription.setFont(
-                Font.font("Serif", 14)
-        );
-        inspectionDescription.setMaxWidth(390);
+        if (sceneArea != null && sceneArea.getHeight() > 0) {
+            inspectionPanel.setMaxHeight(
+                    Math.max(190, sceneArea.getHeight() - 16)
+            );
+        }
 
         interactionContent.getChildren().clear();
 
-        inspectionPanel.setMaxWidth(440);
-        inspectionPanel.setPadding(new Insets(18));
-        inspectionPanel.setSpacing(12);
+        if (hotspot.item != null) {
+            ImageView itemImage = imageFactory.createItemImage(
+                    hotspot.item.getName(),
+                    220
+            );
 
-        closeupImage.setVisible(true);
-        closeupImage.setManaged(true);
-        closeupImage.setViewport(null);
-        closeupImage.setFitWidth(320);
-        closeupImage.setFitHeight(220);
+            closeupImage.setViewport(null);
+            closeupImage.setImage(
+                    itemImage == null ? null : itemImage.getImage()
+            );
 
-        switch (hotspot.type) {
-            case ITEM ->
-                    showItemInspection(hotspot, currentGame);
+            closeupImage.setVisible(true);
+            closeupImage.setManaged(true);
+            closeupImage.setPreserveRatio(true);
+            closeupImage.setSmooth(true);
+            closeupImage.setFitWidth(220);
+            closeupImage.setFitHeight(145);
 
-            case PUZZLE ->
-                    showPuzzleInspection(hotspot, currentGame);
+            Button collectButton = InspectionStyleFactory.createButton(
+                    "Raccogli oggetto",
+                    Color.web("#79552C"),
+                    cream
+            );
 
-            case FINALE ->
-                    showFinaleInspection(
-                            hotspot,
-                            currentGame,
-                            background,
-                            sceneArea
+            collectButton.setOnAction(event -> {
+                if (gameManager.collectItem(currentGame, hotspot.item)) {
+                    statusSetter.accept(
+                            "Hai raccolto: " + hotspot.item.getName()
                     );
 
-            case DETAIL ->
-                    showSceneZoom(hotspot, background);
+                    closeInspection();
+                    refreshScreen.run();
+
+                } else {
+                    inspectionDescription.setText(
+                            "Questo oggetto non è più disponibile."
+                    );
+
+                    collectButton.setDisable(true);
+                }
+            });
+
+            interactionContent.getChildren().add(collectButton);
+
+        } else if (hotspot.puzzle) {
+            closeupImage.setImage(null);
+            closeupImage.setViewport(null);
+            closeupImage.setManaged(false);
+            closeupImage.setVisible(false);
+            inspectionPanel.setMaxWidth(540);
+            inspectionPanel.setPadding(new Insets(14, 18, 14, 18));
+            inspectionPanel.setSpacing(9);
+            inspectionDescription.setFont(Font.font("Serif", 16));
+            inspectionDescription.setMaxWidth(480);
+            inspectionDescription.setPrefWidth(480);
+
+            Puzzle puzzle = currentGame.getCurrentRoom().getPuzzle();
+
+            if (puzzle != null && puzzle.isSolved()) {
+                interactionContent.getChildren().add(
+                        InspectionStyleFactory.styledLabel(
+                                "Meccanismo già attivato",
+                                14,
+                                gold,
+                                true
+                        )
+                );
+
+            } else {
+                TextField answerField = new TextField();
+                answerField.setPromptText("La tua risposta...");
+                answerField.setMaxWidth(260);
+
+                Label feedback = InspectionStyleFactory.styledLabel(
+                        "",
+                        12,
+                        gold,
+                        false
+                );
+
+                feedback.setWrapText(true);
+
+                Button solveButton = InspectionStyleFactory.createButton(
+                        "Prova a risolvere",
+                        blue,
+                        cream
+                );
+
+                solveButton.setOnAction(event -> {
+                    if (answerField.getText().isBlank()) {
+                        feedback.setText("Inserisci una risposta.");
+                        return;
+                    }
+
+                    boolean solved = gameManager.solveCurrentPuzzle(
+                            currentGame,
+                            answerField.getText().trim()
+                    );
+
+                    if (solved) {
+                        feedback.setText(
+                                "Corretto! Il meccanismo si è attivato."
+                        );
+
+                        statusSetter.accept(
+                                "Hai risolto l'enigma: il passaggio è sbloccato."
+                        );
+
+                        solveButton.setDisable(true);
+                        answerField.setDisable(true);
+
+                        nextButton.setDisable(
+                                currentGame.isCompleted()
+                                        || !currentGame.hasNextRoom()
+                        );
+
+                    } else {
+                        feedback.setText(
+                                "Non è la risposta giusta. Riprova."
+                        );
+                    }
+                });
+
+                interactionContent.getChildren().addAll(
+                        answerField,
+                        solveButton,
+                        feedback
+                );
+            }
+
+            if (puzzle != null) {
+                inspectionDescription.setText(
+                        puzzle.getDescription()
+                );
+            }
+
+        } else if (hotspot.finale) {
+            showSceneZoom(hotspot);
+
+            if (currentGame.isCompleted()) {
+                inspectionDescription.setText(
+                        "Il sigillo è già stato attivato. Il tempio è finalmente libero."
+                );
+            } else {
+                inspectionDescription.setText(
+                        "L'altare presenta un incavo a forma di Ankh. Hai già raccolto "
+                                + "il simbolo della vita eterna? Premi il pulsante qui sotto "
+                                + "per collocarlo al centro dell'altare e attivare il sigillo."
+                );
+
+                inspectionDescription.setWrapText(true);
+                inspectionDescription.setMaxWidth(440);
+
+                Button finaleButton = InspectionStyleFactory.createButton(
+                        "Inserisci l'Ankh nell'altare",
+                        Color.web("#79552C"),
+                        cream
+                );
+
+                Label finaleFeedback = InspectionStyleFactory.styledLabel(
+                        "L'Ankh verrà utilizzato per attivare il sigillo.",
+                        13,
+                        gold,
+                        false
+                );
+
+                finaleFeedback.setWrapText(true);
+
+                finaleButton.setOnAction(event -> {
+                    if (gameManager.completeFinale(currentGame)) {
+                        closeInspection();
+
+                        statusSetter.accept(
+                                "Il sigillo si illumina. Hai completato l'avventura!"
+                        );
+
+                        refreshScreen.run();
+                        showEndingPanel();
+
+                    } else {
+                        finaleFeedback.setText(
+                                "Non hai ancora l'Ankh. Esamina il corridoio e raccogli il simbolo della vita eterna."
+                        );
+                    }
+                });
+
+                interactionContent.getChildren().addAll(
+                        finaleButton,
+                        finaleFeedback
+                );
+            }
+
+        } else {
+            showSceneZoom(hotspot);
         }
 
-        inspectionPanel.setVisible(true);
         inspectionPanel.setManaged(true);
+        inspectionPanel.setVisible(true);
         inspectionPanel.toFront();
     }
 
-    /**
-     * Gestisce l'ispezione e la raccolta di un oggetto.
-     */
-    private void showItemInspection(
-            Hotspot hotspot,
-            Game currentGame) {
-
-        ImageView itemImage = itemImageFactory.create(
-                hotspot.item.getName(), 220
-        );
-
-        closeupImage.setViewport(null);
-        closeupImage.setImage(itemImage.getImage());
-        closeupImage.setFitWidth(220);
-        closeupImage.setFitHeight(145);
-
-        Button collectButton = createButton(
-                "Raccogli oggetto",
-                Color.web("#79552C")
-        );
-
-        collectButton.setOnAction(event -> {
-            if (gameManager.collectItem(currentGame, hotspot.item)) {
-                statusUpdater.accept(
-                        "Hai raccolto: " + hotspot.item.getName()
-                );
-
-                close();
-                refreshScreen.run();
-
-            } else {
-                inspectionDescription.setText(
-                        "Questo oggetto non è più disponibile."
-                );
-                collectButton.setDisable(true);
-            }
-        });
-
-        interactionContent.getChildren().add(collectButton);
-    }
-
-    /**
-     * Gestisce la visualizzazione e la risoluzione di un enigma.
-     */
-    private void showPuzzleInspection(
-            Hotspot hotspot,
-            Game currentGame) {
-
-        closeupImage.setVisible(false);
-        closeupImage.setManaged(false);
-
-        inspectionPanel.setMaxWidth(540);
-        inspectionPanel.setPadding(
-                new Insets(14, 18, 14, 18)
-        );
-        inspectionPanel.setSpacing(9);
-
-        inspectionDescription.setFont(
-                Font.font("Serif", 16)
-        );
-        inspectionDescription.setMaxWidth(480);
-        inspectionDescription.setPrefWidth(480);
-
-        Puzzle puzzle = currentGame.getCurrentRoom().getPuzzle();
-
-        if (puzzle != null) {
-            inspectionDescription.setText(
-                    puzzle.getDescription()
-            );
-        }
-
-        if (puzzle != null && puzzle.isSolved()) {
-            Label solvedLabel = styledLabel(
-                    "Meccanismo già attivato",
-                    14,
-                    gold,
-                    true
-            );
-
-            interactionContent.getChildren().add(solvedLabel);
-            return;
-        }
-
-        TextField answerField = new TextField();
-        answerField.setPromptText("La tua risposta...");
-        answerField.setMaxWidth(260);
-
-        Label feedback = styledLabel(
-                "",
-                12,
-                gold,
-                false
-        );
-        feedback.setWrapText(true);
-
-        Button solveButton = createButton(
-                "Prova a risolvere",
-                blue
-        );
-
-        solveButton.setOnAction(event -> {
-            String answer = answerField.getText();
-
-            if (answer == null || answer.isBlank()) {
-                feedback.setText("Inserisci una risposta.");
-                return;
-            }
-
-            if (gameManager.solveCurrentPuzzle(
-                    currentGame,
-                    answer.trim())) {
-
-                feedback.setText(
-                        "Corretto! Il meccanismo si è attivato."
-                );
-
-                statusUpdater.accept(
-                        "Hai risolto l'enigma: il passaggio è sbloccato."
-                );
-
-                solveButton.setDisable(true);
-                answerField.setDisable(true);
-
-                nextButton.setDisable(
-                        currentGame.isCompleted()
-                                || !currentGame.hasNextRoom()
-                );
-
-            } else {
-                feedback.setText(
-                        "Non è la risposta giusta. Riprova."
-                );
-            }
-        });
-
-        interactionContent.getChildren().addAll(
-                answerField,
-                solveButton,
-                feedback
-        );
-    }
-
-    /**
-     * Gestisce l'ispezione dell'altare finale e l'inserimento dell'Ankh.
-     */
-    private void showFinaleInspection(
-            Hotspot hotspot,
-            Game currentGame,
-            ImageView background,
-            StackPane sceneArea) {
-
-        showSceneZoom(hotspot, background);
-
-        if (currentGame.isCompleted()) {
-            inspectionDescription.setText(
-                    "Il sigillo è già stato attivato. " +
-                            "Il tempio è finalmente libero."
-            );
-            return;
-        }
-
-        inspectionDescription.setText(
-                "L'altare presenta un incavo a forma di Ankh. " +
-                        "Hai già raccolto il simbolo della vita eterna? " +
-                        "Premi il pulsante qui sotto per collocarlo al centro " +
-                        "dell'altare e attivare il sigillo."
-        );
-
-        inspectionDescription.setWrapText(true);
-        inspectionDescription.setMaxWidth(440);
-
-        Button insertButton = createButton(
-                "Inserisci l'Ankh nell'altare",
-                Color.web("#79552C")
-        );
-
-        Label feedback = styledLabel(
-                "L'Ankh verrà utilizzato per attivare il sigillo.",
-                13,
-                gold,
-                false
-        );
-        feedback.setWrapText(true);
-
-        insertButton.setOnAction(event -> {
-            if (gameManager.completeFinale(currentGame)) {
-                close();
-
-                statusUpdater.accept(
-                        "Il sigillo si illumina. Hai completato l'avventura!"
-                );
-
-                refreshScreen.run();
-                showEndingPanel(currentGame, sceneArea);
-
-            } else {
-                feedback.setText(
-                        "Non hai ancora l'Ankh. Esamina il corridoio " +
-                                "e raccogli il simbolo della vita eterna."
-                );
-            }
-        });
-
-        interactionContent.getChildren().addAll(
-                insertButton,
-                feedback
-        );
-    }
-
-    /**
-     * Mostra un dettaglio ingrandito dello sfondo della stanza.
-     */
-    private void showSceneZoom(
-            Hotspot hotspot,
-            ImageView background) {
-
+    private void showSceneZoom(HotspotManager.Hotspot hotspot) {
         Image image = background.getImage();
 
         if (image == null) {
             closeupImage.setImage(null);
+            closeupImage.setViewport(null);
             return;
         }
 
-        Rectangle2D viewport = background.getViewport();
+        Rectangle2D visibleArea = background.getViewport();
 
-        if (viewport == null) {
-            viewport = new Rectangle2D(
-                    0, 0, image.getWidth(), image.getHeight()
+        if (visibleArea == null) {
+            visibleArea = new Rectangle2D(
+                    0,
+                    0,
+                    image.getWidth(),
+                    image.getHeight()
             );
         }
 
-        double cropWidth = viewport.getWidth() * 0.42;
-        double cropHeight = viewport.getHeight() * 0.42;
+        double cropWidth = visibleArea.getWidth() * 0.42;
+        double cropHeight = visibleArea.getHeight() * 0.42;
 
-        double centerX = viewport.getMinX()
-                + hotspot.x * viewport.getWidth();
+        double centerX = visibleArea.getMinX()
+                + hotspot.x * visibleArea.getWidth();
 
-        double centerY = viewport.getMinY()
-                + hotspot.y * viewport.getHeight();
+        double centerY = visibleArea.getMinY()
+                + hotspot.y * visibleArea.getHeight();
 
         double cropX = centerX - cropWidth / 2;
         double cropY = centerY - cropHeight / 2;
 
         cropX = Math.max(
-                viewport.getMinX(),
-                Math.min(cropX, viewport.getMaxX() - cropWidth)
+                0,
+                Math.min(cropX, image.getWidth() - cropWidth)
         );
 
         cropY = Math.max(
-                viewport.getMinY(),
-                Math.min(cropY, viewport.getMaxY() - cropHeight)
+                0,
+                Math.min(cropY, image.getHeight() - cropHeight)
         );
 
         closeupImage.setImage(image);
-        closeupImage.setViewport(
-                new Rectangle2D(
-                        cropX,
-                        cropY,
-                        cropWidth,
-                        cropHeight
-                )
-        );
+
+        closeupImage.setViewport(new Rectangle2D(
+                cropX,
+                cropY,
+                cropWidth,
+                cropHeight
+        ));
 
         closeupImage.setFitWidth(320);
         closeupImage.setFitHeight(220);
     }
 
-    /**
-     * Mostra un oggetto selezionato dall'inventario.
-     */
-    public void showInventoryItem(Item item) {
-        inspectionTitle.setText(item.getName());
+    public void showEndingPanel() {
+        Game currentGame = gameSupplier.get();
 
-        inspectionDescription.setText(
-                item.getDescription()
-        );
-
-        interactionContent.getChildren().clear();
-
-        ImageView itemImage = itemImageFactory.create(
-                item.getName(), 220
-        );
-
-        closeupImage.setImage(itemImage.getImage());
-        closeupImage.setViewport(null);
-        closeupImage.setFitWidth(220);
-        closeupImage.setFitHeight(190);
-        closeupImage.setVisible(true);
-        closeupImage.setManaged(true);
-
-        inspectionPanel.setVisible(true);
-        inspectionPanel.setManaged(true);
-        inspectionPanel.toFront();
-    }
-
-    /**
-     * Mostra il pannello conclusivo dell'avventura.
-     */
-    public void showEndingPanel(
-            Game currentGame,
-            StackPane sceneArea) {
-
-        if (currentGame == null || !currentGame.isCompleted()) {
+        if (inspectionPanel == null
+                || currentGame == null
+                || !currentGame.isCompleted()) {
             return;
         }
 
         inspectionTitle.setText("AVVENTURA COMPLETATA");
-        inspectionTitle.setFont(
-                Font.font("Serif", FontWeight.BOLD, 22)
-        );
-
-        Image endingImage = backgroundImageFactory.load(
-                "/images/rooms/ending_ankh_inserted.png"
-        );
-
-        closeupImage.setImage(endingImage);
+        closeupImage.setManaged(true);
+        closeupImage.setVisible(true);
         closeupImage.setViewport(null);
+        closeupImage.setImage(
+                imageFactory.loadImage("/images/rooms/ending_ankh_inserted.png")
+        );
+
         closeupImage.setFitWidth(390);
         closeupImage.setFitHeight(220);
-        closeupImage.setVisible(true);
-        closeupImage.setManaged(true);
 
         inspectionPanel.setMaxWidth(620);
         inspectionPanel.setMaxHeight(
-                sceneArea.getHeight() > 0
-                        ? sceneArea.getHeight()
-                        : 440
+                sceneArea == null || sceneArea.getHeight() <= 0
+                        ? 440
+                        : Math.max(220, sceneArea.getHeight() - 16)
         );
+
         inspectionPanel.setPadding(new Insets(14));
         inspectionPanel.setSpacing(8);
 
-        inspectionDescription.setFont(
-                Font.font("Serif", 14)
-        );
+        inspectionDescription.setFont(Font.font("Serif", 14));
         inspectionDescription.setMaxWidth(540);
         inspectionDescription.setPrefWidth(540);
+
         inspectionDescription.setText(
-                "L'Ankh si incastra nell'altare. Una luce attraversa " +
-                        "le pareti e il sigillo si risveglia, rivelando il " +
-                        "santuario nascosto.\n\n" +
-                        "Il tempio non custodiva un tesoro da conquistare, " +
-                        "ma una memoria da proteggere. Hai ricomposto gli " +
-                        "indizi, superato le prove e raggiunto il cuore del " +
-                        "tempio. La tua esplorazione si conclude qui."
+                "L'Ankh si incastra nell'altare. Una luce attraversa le pareti "
+                        + "e il sigillo si risveglia, rivelando il santuario nascosto.\n\n"
+                        + "Il tempio non custodiva un tesoro da conquistare, ma una memoria "
+                        + "da proteggere. Hai ricomposto gli indizi, superato le prove e "
+                        + "raggiunto il cuore del tempio. La tua esplorazione si conclude qui."
         );
+
+        inspectionDescription.setMaxWidth(540);
+        inspectionDescription.setPrefWidth(540);
+        inspectionDescription.setTextAlignment(TextAlignment.CENTER);
+        inspectionDescription.setAlignment(Pos.CENTER);
 
         interactionContent.getChildren().clear();
 
-        Button restartButton = createButton(
+        Button restartButton = InspectionStyleFactory.createButton(
                 "Ricomincia l'avventura",
-                Color.web("#79552C")
+                Color.web("#79552C"),
+                cream
         );
 
         restartButton.setOnAction(event -> {
-            String playerName = currentGame.getPlayer().getName();
+            String playerName = gameSupplier.get().getPlayer().getName();
 
-            Game newGame = gameManager.startNewGame(playerName);
+            gameSetter.accept(gameManager.startNewGame(playerName));
 
-            close();
-            restartGame.accept(newGame);
+            closeInspection();
 
-            statusUpdater.accept(
+            statusSetter.accept(
                     "Una nuova esplorazione sta per cominciare."
             );
 
@@ -559,63 +501,38 @@ public class InspectionManager {
 
         interactionContent.getChildren().add(restartButton);
 
-        inspectionPanel.setVisible(true);
         inspectionPanel.setManaged(true);
+        inspectionPanel.setVisible(true);
         inspectionPanel.toFront();
     }
 
-    /**
-     * Chiude il pannello di ispezione.
-     */
-    public void close() {
+    public void showInventoryItem(Item item) {
+        inspectionTitle.setText(item.getName());
+        inspectionDescription.setText(item.getDescription());
+
+        interactionContent.getChildren().clear();
+
+        ImageView detail = imageFactory.createItemImage(item.getName(), 220);
+
+        closeupImage.setViewport(null);
+        closeupImage.setImage(
+                detail == null ? null : detail.getImage()
+        );
+
+        closeupImage.setFitWidth(220);
+        closeupImage.setFitHeight(190);
+
+        inspectionPanel.setManaged(true);
+        inspectionPanel.setVisible(true);
+        inspectionPanel.toFront();
+    }
+
+    public void closeInspection() {
+        if (inspectionPanel == null) {
+            return;
+        }
+
         inspectionPanel.setVisible(false);
         inspectionPanel.setManaged(false);
-    }
-
-    private Button createButton(String text, Color color) {
-        Button button = new Button(text);
-
-        button.setFont(
-                Font.font("Serif", FontWeight.BOLD, 13)
-        );
-        button.setTextFill(cream);
-        button.setPadding(
-                new Insets(9, 13, 9, 13)
-        );
-        button.setStyle(
-                "-fx-background-color: " + toHex(color) + ";" +
-                        "-fx-background-radius: 8;"
-        );
-        button.setCursor(Cursor.HAND);
-
-        return button;
-    }
-
-    private Label styledLabel(
-            String text,
-            double size,
-            Color color,
-            boolean bold) {
-
-        Label label = new Label(text);
-
-        label.setFont(
-                bold
-                        ? Font.font("Serif", FontWeight.BOLD, size)
-                        : Font.font("Serif", size)
-        );
-
-        label.setTextFill(color);
-
-        return label;
-    }
-
-    private String toHex(Color color) {
-        return String.format(
-                "#%02X%02X%02X",
-                (int) (color.getRed() * 255),
-                (int) (color.getGreen() * 255),
-                (int) (color.getBlue() * 255)
-        );
     }
 }
