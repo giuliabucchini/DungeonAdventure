@@ -1,4 +1,3 @@
-
 package it.unicam.cs.mpgc.rpg125904.domain;
 
 import java.util.ArrayList;
@@ -9,13 +8,13 @@ public class Room {
     private final String name;
     private final String description;
     private final List<Item> items;
-    private Puzzle puzzle;
+    private RoomChallenge challenge;
 
     public Room(String name, String description) {
         this.name = name;
         this.description = description;
         this.items = new ArrayList<>();
-        this.puzzle = null;
+        this.challenge = null;
     }
 
     public String getName() {
@@ -38,11 +37,19 @@ public class Room {
         return List.copyOf(items);
     }
 
+    public RoomChallenge getChallenge() {
+        return challenge;
+    }
+
+    public void setChallenge(RoomChallenge challenge) {
+        this.challenge = challenge;
+    }
+
     public Puzzle getPuzzle() {
-        return puzzle;
+        return challenge instanceof Puzzle puzzle ? puzzle : null;
     }
 
     public void setPuzzle(Puzzle puzzle) {
-        this.puzzle = puzzle;
+        this.challenge = puzzle;
     }
 }

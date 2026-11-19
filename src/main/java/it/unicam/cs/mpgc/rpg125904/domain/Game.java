@@ -16,6 +16,12 @@ public class Game {
         this.currentRoomIndex = 0;
         this.completed = false;
     }
+    public Game(String playerName, PlayerRole role, List<Room> rooms) {
+        this.player = new Player(playerName, role);
+        this.rooms = new ArrayList<>(rooms);
+        this.currentRoomIndex = 0;
+        this.completed = false;
+    }
 
     public Player getPlayer() {
         return player;
@@ -27,6 +33,9 @@ public class Game {
 
     public Room getRoom(int index) {
         return rooms.get(index);
+    }
+    public int getRoomCount() {
+        return rooms.size();
     }
 
     public int getCurrentRoomIndex() {

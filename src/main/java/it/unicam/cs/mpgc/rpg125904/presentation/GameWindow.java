@@ -1,4 +1,3 @@
-
 package it.unicam.cs.mpgc.rpg125904.presentation;
 
 import com.google.gson.JsonParseException;
@@ -23,7 +22,6 @@ import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
-import javafx.scene.text.FontWeight;
 import javafx.stage.Stage;
 
 import java.io.IOException;
@@ -37,13 +35,9 @@ public class GameWindow extends Application {
 
     @Override
     public void start(Stage stage) {
-
         primaryStage = stage;
 
-        Image image = new Image(
-                getClass().getResourceAsStream("/images/rooms/entrance.png")
-        );
-
+        Image image = new Image(getClass().getResourceAsStream("/images/rooms/entrance.png"));
         ImageView background = new ImageView(image);
         background.setFitWidth(900);
         background.setFitHeight(600);
@@ -54,26 +48,13 @@ public class GameWindow extends Application {
         overlay.setFill(Color.rgb(20, 15, 10, 0.55));
         overlay.setMouseTransparent(true);
 
-        Label title = new Label("DUNGEON ADVENTURE");
-        title.setFont(Font.font("Serif", FontWeight.BOLD, 42));
-        title.setTextFill(Color.web("#E4C17A"));
+        Label title = UiStyleFactory.styledLabel("DUNGEON ADVENTURE", 42, Color.web("#E4C17A"), true);
+        Label subtitle = UiStyleFactory.styledLabel("Il tempio dimenticato", 24, Color.web("#F3E5C8"), false);
+        Label message = UiStyleFactory.styledLabel("", 16, Color.web("#E4C17A"), false);
 
-        Label subtitle = new Label("Il tempio dimenticato");
-        subtitle.setFont(Font.font("Serif", 24));
-        subtitle.setTextFill(Color.web("#F3E5C8"));
-
-        Label message = new Label("");
-        message.setFont(Font.font("Serif", 16));
-        message.setTextFill(Color.web("#E4C17A"));
-
-        Button newGameButton = new Button("Nuova partita");
-        styleButton(newGameButton);
-
-        Button loadGameButton = new Button("Carica partita");
-        styleButton(loadGameButton);
-
-        Button exitButton = new Button("Esci");
-        styleButton(exitButton);
+        Button newGameButton = createMenuButton("Nuova partita");
+        Button loadGameButton = createMenuButton("Carica partita");
+        Button exitButton = createMenuButton("Esci");
 
         newGameButton.setOnAction(event -> {
             try {
@@ -86,9 +67,7 @@ public class GameWindow extends Application {
         });
 
         loadGameButton.setOnAction(event -> {
-
             Path savePath = Path.of("partita.json");
-
             if (!Files.exists(savePath)) {
                 message.setText("Non esiste ancora una partita salvata.");
                 return;
@@ -97,15 +76,12 @@ public class GameWindow extends Application {
             try {
                 GameLoader gameLoader = new GameLoader();
                 GameSaveData saveData = gameLoader.load("partita.json");
-
                 if (saveData == null) {
                     message.setText("Il salvataggio non contiene dati.");
                     return;
                 }
-
                 Game game = gameManager.restoreGame(saveData);
                 showGameScreen(game);
-
             } catch (IOException | JsonParseException | IllegalArgumentException e) {
                 message.setText("Il file di salvataggio non è valido.");
                 e.printStackTrace();
@@ -114,22 +90,11 @@ public class GameWindow extends Application {
 
         exitButton.setOnAction(event -> primaryStage.close());
 
-        VBox menu = new VBox(20);
+        VBox menu = new VBox(20, title, subtitle, newGameButton, loadGameButton, exitButton, message);
         menu.setAlignment(Pos.CENTER);
         menu.setPadding(new Insets(30));
 
-        menu.getChildren().addAll(
-                title,
-                subtitle,
-                newGameButton,
-                loadGameButton,
-                exitButton,
-                message
-        );
-
-        StackPane root = new StackPane();
-        root.getChildren().addAll(background, overlay, menu);
-
+        StackPane root = new StackPane(background, overlay, menu);
         Scene scene = new Scene(root, 900, 600);
 
         primaryStage.setTitle("Dungeon Adventure");
@@ -138,31 +103,20 @@ public class GameWindow extends Application {
         primaryStage.show();
     }
 
-    private void styleButton(Button button) {
-
+    private Button createMenuButton(String text) {
+        Button button = new Button(text);
         button.setPrefSize(220, 45);
         button.setFont(Font.font("Serif", 18));
-        button.setTextFill(Color.web("#F3E5C8"));
-
+        button.setTextFill(UiStyleFactory.CREAM);
         button.setBackground(new Background(
-                new BackgroundFill(
-                        Color.web("#80603C"),
-                        new CornerRadii(8),
-                        Insets.EMPTY
-                )
+                new BackgroundFill(Color.web("#80603C"), new CornerRadii(8), Insets.EMPTY)
         ));
+        return button;
     }
 
     private void showGameScreen(Game game) {
-
         GameScreen gameScreen = new GameScreen();
-
-        Scene gameScene = new Scene(
-                gameScreen.createView(game),
-                900,
-                600
-        );
-
+        Scene gameScene = new Scene(gameScreen.createView(game), 900, 600);
         primaryStage.setScene(gameScene);
     }
 

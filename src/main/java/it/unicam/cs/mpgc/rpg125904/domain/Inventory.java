@@ -12,22 +12,26 @@ public class Inventory {
     }
 
     public void addItem(Item item) {
-
-        if (!containsItem(item.getName())) {
+        if (item != null && !containsItem(item.getName())) {
             items.add(item);
         }
     }
+
+    public void removeItem(Item item) {
+        items.remove(item);
+    }
+
     public List<Item> getItems() {
         return List.copyOf(items);
     }
 
     public boolean containsItem(String itemName) {
+        if (itemName == null) return false;
         for (Item item : items) {
-            if (item.getName().equalsIgnoreCase(itemName)) {
+            if (item.getName().trim().equalsIgnoreCase(itemName.trim())) {
                 return true;
             }
         }
-
         return false;
     }
 }
