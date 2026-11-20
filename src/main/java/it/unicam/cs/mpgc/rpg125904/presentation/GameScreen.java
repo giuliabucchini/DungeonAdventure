@@ -31,6 +31,7 @@ public class GameScreen {
     private final GameManager gameManager = new GameManager();
     private final GameSaver gameSaver = new GameSaver();
     private final GameImageFactory imageFactory = new GameImageFactory();
+    private final Runnable onReturnToMenu;
 
     private HotspotManager hotspotManager;
     private InspectionManager inspectionManager;
@@ -38,6 +39,7 @@ public class GameScreen {
     private StackPane sceneArea;
     private StackPane sceneContent;
     private Pane hotspotLayer;
+    private StackPane menuOverlay;
 
     private Label statusLabel;
     private Label roomTitle;
@@ -48,6 +50,14 @@ public class GameScreen {
 
     private ImageView background;
     private Game currentGame;
+
+    public GameScreen() {
+        this(null);
+    }
+
+    public GameScreen(Runnable onReturnToMenu) {
+        this.onReturnToMenu = onReturnToMenu;
+    }
 
     public Parent createView(Game game) {
         currentGame = game;
@@ -71,10 +81,10 @@ public class GameScreen {
         statusLabel.setPrefSize(165, 48);
         statusLabel.setMaxSize(165, 48);
 
-        Button saveButton = UiStyleFactory.createButton("Salva", UiStyleFactory.BLUE);
-        saveButton.setOnAction(event -> saveGame());
+        Button menuButton = UiStyleFactory.createButton("Menu", UiStyleFactory.BLUE);
+        menuButton.setOnAction(event -> toggleMenuOverlay());
 
-        HBox header = new HBox(20, gameTitle, roomTitle, saveButton);
+        HBox header = new HBox(20, gameTitle, roomTitle, menuButton);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(10, 15, 10, 15));
         header.setBackground(new Background(
@@ -115,6 +125,7 @@ public class GameScreen {
         nextButton.setPrefWidth(105);
         nextButton.setMaxWidth(105);
         nextButton.setOnAction(event -> {
+            closeMenuOverlay();
             inspectionManager.closeInspection();
             if (gameManager.moveToNextRoom(currentGame)) {
                 statusLabel.setText("Una nuova area del tempio si apre davanti a te.");
@@ -146,6 +157,10 @@ public class GameScreen {
         sceneArea.getChildren().add(inspectionManager.createPanel());
         StackPane.setAlignment(inspectionManager.getPanel(), Pos.CENTER);
 
+        menuOverlay = createMenuOverlay();
+        sceneArea.getChildren().add(menuOverlay);
+        StackPane.setAlignment(menuOverlay, Pos.CENTER);
+
         layout.setCenter(sceneArea);
         BorderPane.setMargin(sceneArea, new Insets(8, 0, 8, 0));
 
@@ -173,6 +188,7 @@ public class GameScreen {
         previousButton.setPrefWidth(105);
         previousButton.setMaxWidth(105);
         previousButton.setOnAction(event -> {
+            closeMenuOverlay();
             inspectionManager.closeInspection();
             if (gameManager.moveToPreviousRoom(currentGame)) {
                 statusLabel.setText("Sei tornato nella stanza precedente.");
@@ -200,6 +216,73 @@ public class GameScreen {
         });
 
         return layout;
+    }
+
+    private StackPane createMenuOverlay() {
+        StackPane overlay = new StackPane();
+        overlay.setBackground(new Background(
+                new BackgroundFill(Color.rgb(16, 14, 11, 0.75), CornerRadii.EMPTY, Insets.EMPTY)
+        ));
+        overlay.setVisible(false);
+
+        Label title = UiStyleFactory.styledLabel("MENU", 18, UiStyleFactory.GOLD, true);
+
+        Button saveBtn = UiStyleFactory.createButton("Salva partita", UiStyleFactory.BLUE);
+        saveBtn.setMaxWidth(Double.MAX_VALUE);
+        saveBtn.setOnAction(event -> {
+            saveGame();
+            closeMenuOverlay();
+        });
+
+        Button homeBtn = UiStyleFactory.createButton("Schermata iniziale", UiStyleFactory.BRONZE);
+        homeBtn.setMaxWidth(Double.MAX_VALUE);
+        homeBtn.setOnAction(event -> {
+            closeMenuOverlay();
+            if (onReturnToMenu != null) {
+                onReturnToMenu.run();
+            }
+        });
+
+        Button resumeBtn = UiStyleFactory.createButton("Riprendi", Color.web("#4A3B2C"));
+        resumeBtn.setMaxWidth(Double.MAX_VALUE);
+        resumeBtn.setOnAction(event -> closeMenuOverlay());
+
+        VBox box = new VBox(12, title, saveBtn, homeBtn, resumeBtn);
+        box.setAlignment(Pos.CENTER);
+        box.setPadding(new Insets(22, 26, 22, 26));
+        box.setMaxWidth(260);
+        box.setMaxHeight(Region.USE_PREF_SIZE);
+        box.setBackground(new Background(
+                new BackgroundFill(UiStyleFactory.DARK, new CornerRadii(10), Insets.EMPTY)
+        ));
+        box.setBorder(new Border(
+                new BorderStroke(UiStyleFactory.GOLD, BorderStrokeStyle.SOLID, new CornerRadii(10), new BorderWidths(1.5))
+        ));
+
+        overlay.getChildren().add(box);
+        overlay.setOnMouseClicked(event -> {
+            if (event.getTarget() == overlay) {
+                closeMenuOverlay();
+            }
+        });
+
+        return overlay;
+    }
+
+    private void toggleMenuOverlay() {
+        if (menuOverlay != null) {
+            boolean nextState = !menuOverlay.isVisible();
+            menuOverlay.setVisible(nextState);
+            if (nextState) {
+                menuOverlay.toFront();
+            }
+        }
+    }
+
+    private void closeMenuOverlay() {
+        if (menuOverlay != null) {
+            menuOverlay.setVisible(false);
+        }
     }
 
     private void updateSceneSize() {

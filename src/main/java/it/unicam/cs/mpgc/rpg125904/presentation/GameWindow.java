@@ -37,7 +37,14 @@ public class GameWindow extends Application {
     @Override
     public void start(Stage stage) {
         primaryStage = stage;
+        primaryStage.setTitle("Dungeon Adventure");
+        primaryStage.setResizable(false);
 
+        showMainMenu();
+        primaryStage.show();
+    }
+
+    public void showMainMenu() {
         Image image = new Image(getClass().getResourceAsStream("/images/rooms/entrance.png"));
         ImageView background = new ImageView(image);
         background.setFitWidth(900);
@@ -115,11 +122,7 @@ public class GameWindow extends Application {
 
         StackPane root = new StackPane(background, overlay, menu);
         Scene scene = new Scene(root, 900, 600);
-
-        primaryStage.setTitle("Dungeon Adventure");
         primaryStage.setScene(scene);
-        primaryStage.setResizable(false);
-        primaryStage.show();
     }
 
     private Button createMenuButton(String text) {
@@ -134,7 +137,7 @@ public class GameWindow extends Application {
     }
 
     private void showGameScreen(Game game) {
-        GameScreen gameScreen = new GameScreen();
+        GameScreen gameScreen = new GameScreen(this::showMainMenu);
         Scene gameScene = new Scene(gameScreen.createView(game), 900, 600);
         primaryStage.setScene(gameScene);
     }
