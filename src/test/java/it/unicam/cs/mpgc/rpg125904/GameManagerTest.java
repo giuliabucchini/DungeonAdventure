@@ -1,4 +1,3 @@
-
 package it.unicam.cs.mpgc.rpg125904;
 
 import it.unicam.cs.mpgc.rpg125904.application.GameManager;
@@ -15,29 +14,31 @@ class GameManagerTest {
 
     @Test
     void shouldNotMoveToNextRoomWhenPuzzleIsNotSolved() {
-
         GameManager gameManager = new GameManager();
         Game game = gameManager.startNewGame("Esploratore");
 
         gameManager.collectItems(game);
-
         assertTrue(gameManager.moveToNextRoom(game));
 
         gameManager.collectItems(game);
-
         boolean moved = gameManager.moveToNextRoom(game);
 
         assertFalse(moved);
+        assertEquals("Sala delle iscrizioni", game.getCurrentRoom().getName());
+    }
 
-        assertEquals(
-                "Sala delle iscrizioni",
-                game.getCurrentRoom().getName()
-        );
+    @Test
+    void shouldRequireSpecificItemBeforeSolvingPuzzle() {
+        GameManager gameManager = new GameManager();
+        Game game = gameManager.startNewGame("Esploratore");
+
+        assertTrue(gameManager.moveToNextRoom(game));
+        assertFalse(gameManager.solveCurrentPuzzle(game, "sole"));
+        assertTrue(gameManager.getPuzzleRequirementMessage(game).contains("Tavoletta dei geroglifici"));
     }
 
     @Test
     void shouldMoveThroughAllFiveRoomsWhenPuzzlesAreSolved() {
-
         GameManager gameManager = new GameManager();
         Game game = gameManager.startNewGame("Esploratore");
 
@@ -47,52 +48,25 @@ class GameManagerTest {
         assertEquals("Camera segreta blu", game.getRoom(3).getName());
         assertEquals("Corridoio del santuario", game.getRoom(4).getName());
 
-        // Raccoglie la tavoletta nella prima stanza
         gameManager.collectItems(game);
-
-        // Raggiunge la Sala delle iscrizioni
         assertTrue(gameManager.moveToNextRoom(game));
 
-        // Raccoglie la scheggia e gli altri oggetti
         gameManager.collectItems(game);
-
-        // Risolve il primo enigma
         assertTrue(gameManager.solveCurrentPuzzle(game, "sole"));
-
-        // Raggiunge la Camera degli enigmi
         assertTrue(gameManager.moveToNextRoom(game));
 
-        // Risolve il secondo enigma
-        assertTrue(
-                gameManager.solveCurrentPuzzle(
-                        game,
-                        "Scheggia del sigillo"
-                )
-        );
-
-        // Raggiunge la Camera segreta blu
+        assertTrue(gameManager.solveCurrentPuzzle(game, "Scheggia del sigillo"));
         assertTrue(gameManager.moveToNextRoom(game));
+        assertEquals("Camera segreta blu", game.getCurrentRoom().getName());
 
-        assertEquals(
-                "Camera segreta blu",
-                game.getCurrentRoom().getName()
-        );
-
-        // Raggiunge il Corridoio del santuario
         assertTrue(gameManager.moveToNextRoom(game));
+        assertEquals("Corridoio del santuario", game.getCurrentRoom().getName());
 
-        assertEquals(
-                "Corridoio del santuario",
-                game.getCurrentRoom().getName()
-        );
-
-        // Non esistono altre stanze
         assertFalse(gameManager.moveToNextRoom(game));
     }
 
     @Test
     void shouldRestoreGameFromCurrentSaveData() {
-
         GameSaveData saveData = new GameSaveData(
                 "Esploratore",
                 2,
@@ -101,27 +75,17 @@ class GameManagerTest {
         );
 
         GameManager gameManager = new GameManager();
-
         Game game = gameManager.restoreGame(saveData);
 
         assertEquals("Esploratore", game.getPlayer().getName());
-
         assertEquals(2, game.getCurrentRoomIndex());
-
-        assertTrue(
-                game.getPlayer().getInventory()
-                        .containsItem("Scheggia del sigillo")
-        );
-
+        assertTrue(game.getPlayer().getInventory().containsItem("Scheggia del sigillo"));
         assertTrue(game.getRoom(2).getPuzzle().isSolved());
-
-        // La tavoletta iniziale è presente nell'inventario e non più nella stanza
         assertTrue(game.getRoom(0).getItems().isEmpty());
     }
 
     @Test
     void shouldRestoreGameInFifthRoom() {
-
         GameSaveData saveData = new GameSaveData(
                 "Esploratore",
                 4,
@@ -130,72 +94,59 @@ class GameManagerTest {
         );
 
         GameManager gameManager = new GameManager();
-
         Game game = gameManager.restoreGame(saveData);
 
         assertEquals(4, game.getCurrentRoomIndex());
-
-        assertEquals(
-                "Corridoio del santuario",
-                game.getCurrentRoom().getName()
-        );
-
-        assertTrue(
-                game.getPlayer().getInventory()
-                        .containsItem("Scheggia del sigillo")
-        );
-
+        assertEquals("Corridoio del santuario", game.getCurrentRoom().getName());
+        assertTrue(game.getPlayer().getInventory().containsItem("Scheggia del sigillo"));
         assertTrue(game.getRoom(1).getPuzzle().isSolved());
         assertTrue(game.getRoom(2).getPuzzle().isSolved());
     }
 
     @Test
     void shouldRestoreNewSaveWithFiveRooms() {
-
         GameManager gameManager = new GameManager();
-
         Game originalGame = gameManager.startNewGame("Esploratore");
 
         gameManager.collectItems(originalGame);
-
         assertTrue(gameManager.moveToNextRoom(originalGame));
 
         gameManager.collectItems(originalGame);
+        assertTrue(gameManager.solveCurrentPuzzle(originalGame, "sole"));
 
-        assertTrue(
-                gameManager.solveCurrentPuzzle(originalGame, "sole")
-        );
-
-        GameSaveData saveData =
-                gameManager.createSaveData(originalGame);
-
-        Game restoredGame =
-                gameManager.restoreGame(saveData);
+        GameSaveData saveData = gameManager.createSaveData(originalGame);
+        Game restoredGame = gameManager.restoreGame(saveData);
 
         assertEquals(1, restoredGame.getCurrentRoomIndex());
-
-        assertTrue(
-                restoredGame.getPlayer().getInventory()
-                        .containsItem("Scheggia del sigillo")
-        );
-
-        assertTrue(
-                restoredGame.getPlayer().getInventory()
-                        .containsItem("Tavoletta dei geroglifici")
-        );
-
+        assertTrue(restoredGame.getPlayer().getInventory().containsItem("Scheggia del sigillo"));
+        assertTrue(restoredGame.getPlayer().getInventory().containsItem("Tavoletta dei geroglifici"));
         assertTrue(restoredGame.getRoom(1).getPuzzle().isSolved());
-
-        assertEquals(
-                "Corridoio del santuario",
-                restoredGame.getRoom(4).getName()
-        );
+        assertEquals("Corridoio del santuario", restoredGame.getRoom(4).getName());
     }
 
+    @Test
+    void shouldRejectInvalidSaveData() {
+        GameManager gameManager = new GameManager();
+
+        GameSaveData invalidRoomSave = new GameSaveData(
+                "Esploratore",
+                99,
+                List.of(),
+                List.of(false, false, false, false, false)
+        );
+        assertThrows(IllegalArgumentException.class, () -> gameManager.restoreGame(invalidRoomSave));
+
+        GameSaveData unknownItemSave = new GameSaveData(
+                "Esploratore",
+                0,
+                List.of("Oggetto inesistente"),
+                List.of(false, false, false, false, false)
+        );
+        assertThrows(IllegalArgumentException.class, () -> gameManager.restoreGame(unknownItemSave));
+    }
 
     @Test
-    void shouldCompleteAdventureOnlyAfterUsingTheAnkh() {
-
+    void shouldCompleteAdventureOnlyAfterUsingTheAnkhAndEvaluateRank() {
         GameManager gameManager = new GameManager();
         Game game = gameManager.startNewGame("Esploratore");
 
@@ -206,10 +157,7 @@ class GameManagerTest {
         assertTrue(gameManager.solveCurrentPuzzle(game, "sole"));
         assertTrue(gameManager.moveToNextRoom(game));
 
-        assertTrue(gameManager.solveCurrentPuzzle(
-                game,
-                "Scheggia del sigillo"
-        ));
+        assertTrue(gameManager.solveCurrentPuzzle(game, "Scheggia del sigillo"));
         assertTrue(gameManager.moveToNextRoom(game));
 
         gameManager.collectItems(game);
@@ -223,11 +171,12 @@ class GameManagerTest {
         assertTrue(gameManager.completeFinale(game));
         assertTrue(game.isCompleted());
 
-        Game restored = gameManager.restoreGame(
-                gameManager.createSaveData(game)
-        );
+        GameManager.ArchaeologistEvaluation evaluation = gameManager.evaluateEnding(game);
+        assertEquals(evaluation.totalRelics(), evaluation.collectedRelics());
+        assertEquals("Gran Maestro Archeologo del Tempio", evaluation.rankTitle());
+
+        Game restored = gameManager.restoreGame(gameManager.createSaveData(game));
         assertTrue(restored.isCompleted());
         assertEquals(4, restored.getCurrentRoomIndex());
     }
-
 }

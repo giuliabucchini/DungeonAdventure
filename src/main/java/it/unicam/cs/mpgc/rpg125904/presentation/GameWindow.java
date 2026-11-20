@@ -33,6 +33,7 @@ public class GameWindow extends Application {
 
     private Stage primaryStage;
     private final GameManager gameManager = new GameManager();
+    private final GameImageFactory imageFactory = new GameImageFactory();
 
     @Override
     public void start(Stage stage) {
@@ -45,8 +46,11 @@ public class GameWindow extends Application {
     }
 
     public void showMainMenu() {
-        Image image = new Image(getClass().getResourceAsStream("/images/rooms/entrance.png"));
-        ImageView background = new ImageView(image);
+        ImageView background = new ImageView();
+        Image image = imageFactory.loadImage("/images/rooms/entrance.png");
+        if (image != null) {
+            background.setImage(image);
+        }
         background.setFitWidth(900);
         background.setFitHeight(600);
         background.setPreserveRatio(false);

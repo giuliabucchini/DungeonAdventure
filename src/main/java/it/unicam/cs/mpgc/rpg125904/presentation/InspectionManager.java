@@ -33,10 +33,6 @@ public class InspectionManager {
     private final Runnable refreshScreen;
     private final Button nextButton;
 
-    private final Color gold = Color.web("#E6BD70");
-    private final Color cream = Color.web("#F5E8CF");
-    private final Color blue = Color.web("#18364A");
-
     private VBox inspectionPanel;
     private Label inspectionTitle;
     private Label inspectionDescription;
@@ -75,17 +71,17 @@ public class InspectionManager {
                 new BackgroundFill(Color.rgb(19, 25, 28, 0.98), new CornerRadii(12), Insets.EMPTY)
         ));
         inspectionPanel.setBorder(new Border(
-                new BorderStroke(gold, BorderStrokeStyle.SOLID, new CornerRadii(12), new BorderWidths(1.2))
+                new BorderStroke(UiStyleFactory.GOLD, BorderStrokeStyle.SOLID, new CornerRadii(12), new BorderWidths(1.2))
         ));
 
-        inspectionTitle = UiStyleFactory.styledLabel("", 19, gold, true);
+        inspectionTitle = UiStyleFactory.styledLabel("", 19, UiStyleFactory.GOLD, true);
 
         closeupImage = new ImageView();
         closeupImage.setFitWidth(210);
         closeupImage.setFitHeight(130);
         closeupImage.setPreserveRatio(true);
 
-        inspectionDescription = UiStyleFactory.styledLabel("", 15, cream, false);
+        inspectionDescription = UiStyleFactory.styledLabel("", 15, UiStyleFactory.CREAM, false);
         inspectionDescription.setWrapText(true);
         inspectionDescription.setMaxWidth(500);
         inspectionDescription.setPrefWidth(500);
@@ -95,7 +91,7 @@ public class InspectionManager {
         interactionContent = new VBox(10);
         interactionContent.setAlignment(Pos.CENTER);
 
-        Button closeButton = UiStyleFactory.createButton("Chiudi", blue, cream);
+        Button closeButton = UiStyleFactory.createButton("Chiudi", UiStyleFactory.BLUE, UiStyleFactory.CREAM);
         closeButton.setOnAction(event -> closeInspection());
 
         inspectionPanel.getChildren().addAll(
@@ -161,8 +157,8 @@ public class InspectionManager {
 
         Button collectButton = UiStyleFactory.createButton(
                 "Raccogli oggetto",
-                Color.web("#79552C"),
-                cream
+                UiStyleFactory.BRONZE,
+                UiStyleFactory.CREAM
         );
 
         collectButton.setOnAction(event -> {
@@ -199,7 +195,7 @@ public class InspectionManager {
 
         if (puzzle != null && puzzle.isSolved()) {
             interactionContent.getChildren().add(
-                    UiStyleFactory.styledLabel("Meccanismo già attivato", 14, gold, true)
+                    UiStyleFactory.styledLabel("Meccanismo già attivato", 14, UiStyleFactory.GOLD, true)
             );
             return;
         }
@@ -208,10 +204,10 @@ public class InspectionManager {
         answerField.setPromptText("La tua risposta...");
         answerField.setMaxWidth(260);
 
-        Label feedback = UiStyleFactory.styledLabel("", 12, gold, false);
+        Label feedback = UiStyleFactory.styledLabel("", 12, UiStyleFactory.GOLD, false);
         feedback.setWrapText(true);
 
-        Button solveButton = UiStyleFactory.createButton("Prova a risolvere", blue, cream);
+        Button solveButton = UiStyleFactory.createButton("Prova a risolvere", UiStyleFactory.BLUE, UiStyleFactory.CREAM);
         solveButton.setOnAction(event -> {
             if (answerField.getText().isBlank()) {
                 feedback.setText("Inserisci una risposta.");
@@ -253,14 +249,14 @@ public class InspectionManager {
 
         Button finaleButton = UiStyleFactory.createButton(
                 "Inserisci l'Ankh nell'altare",
-                Color.web("#79552C"),
-                cream
+                UiStyleFactory.BRONZE,
+                UiStyleFactory.CREAM
         );
 
         Label finaleFeedback = UiStyleFactory.styledLabel(
                 "L'Ankh verrà utilizzato per attivare il sigillo.",
                 13,
-                gold,
+                UiStyleFactory.GOLD,
                 false
         );
         finaleFeedback.setWrapText(true);
@@ -346,14 +342,14 @@ public class InspectionManager {
                 "Grado: " + evaluation.rankTitle()
                         + "  |  Reperti recuperati: " + evaluation.collectedRelics() + "/" + evaluation.totalRelics(),
                 13.5,
-                gold,
+                UiStyleFactory.GOLD,
                 true
         );
 
         Button restartButton = UiStyleFactory.createButton(
                 "Ricomincia l'avventura",
-                Color.web("#79552C"),
-                cream
+                UiStyleFactory.BRONZE,
+                UiStyleFactory.CREAM
         );
 
         restartButton.setOnAction(event -> {
