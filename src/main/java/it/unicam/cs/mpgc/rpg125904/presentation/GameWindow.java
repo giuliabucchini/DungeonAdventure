@@ -12,6 +12,7 @@ import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.Background;
@@ -52,13 +53,31 @@ public class GameWindow extends Application {
         Label subtitle = UiStyleFactory.styledLabel("Il tempio dimenticato", 24, Color.web("#F3E5C8"), false);
         Label message = UiStyleFactory.styledLabel("", 16, Color.web("#E4C17A"), false);
 
+        TextField nameField = new TextField();
+        nameField.setPromptText("Nome avventuriero (opzionale)");
+        nameField.setAlignment(Pos.CENTER);
+        nameField.setMaxWidth(220);
+        nameField.setPrefHeight(38);
+        nameField.setStyle(
+                "-fx-background-color: rgba(25, 19, 13, 0.88);"
+                        + "-fx-text-fill: #F3E5C8;"
+                        + "-fx-prompt-text-fill: #B8A684;"
+                        + "-fx-border-color: #80603C;"
+                        + "-fx-border-radius: 6;"
+                        + "-fx-background-radius: 6;"
+                        + "-fx-font-family: 'Serif';"
+                        + "-fx-font-size: 15px;"
+        );
+
         Button newGameButton = createMenuButton("Nuova partita");
         Button loadGameButton = createMenuButton("Carica partita");
         Button exitButton = createMenuButton("Esci");
 
         newGameButton.setOnAction(event -> {
             try {
-                Game game = gameManager.startNewGame("Esploratore");
+                String rawName = nameField.getText() == null ? "" : nameField.getText().trim();
+                String playerName = rawName.isEmpty() ? "Esploratore" : rawName;
+                Game game = gameManager.startNewGame(playerName);
                 showGameScreen(game);
             } catch (Exception e) {
                 message.setText("Impossibile avviare una nuova partita.");
@@ -90,7 +109,7 @@ public class GameWindow extends Application {
 
         exitButton.setOnAction(event -> primaryStage.close());
 
-        VBox menu = new VBox(20, title, subtitle, newGameButton, loadGameButton, exitButton, message);
+        VBox menu = new VBox(16, title, subtitle, nameField, newGameButton, loadGameButton, exitButton, message);
         menu.setAlignment(Pos.CENTER);
         menu.setPadding(new Insets(30));
 

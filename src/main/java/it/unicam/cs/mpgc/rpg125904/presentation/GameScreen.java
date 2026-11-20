@@ -60,7 +60,7 @@ public class GameScreen {
         Label gameTitle = UiStyleFactory.styledLabel("DUNGEON ADVENTURE", 18, UiStyleFactory.GOLD, true);
 
         statusLabel = UiStyleFactory.styledLabel(
-                "Esplora la stanza: alcuni oggetti nascondono qualcosa.",
+                "Benvenuto, " + game.getPlayer().getName() + "! Esplora la stanza.",
                 11.5,
                 UiStyleFactory.CREAM,
                 false

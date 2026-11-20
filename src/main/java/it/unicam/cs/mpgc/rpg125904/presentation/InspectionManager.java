@@ -314,32 +314,41 @@ public class InspectionManager {
             return;
         }
 
+        GameManager.ArchaeologistEvaluation evaluation = gameManager.evaluateEnding(currentGame);
+        String playerName = currentGame.getPlayer().getName();
+
         inspectionTitle.setText("AVVENTURA COMPLETATA");
         closeupImage.setManaged(true);
         closeupImage.setVisible(true);
         closeupImage.setViewport(null);
         closeupImage.setImage(imageFactory.loadImage("/images/rooms/ending_ankh_inserted.png"));
-        closeupImage.setFitWidth(390);
-        closeupImage.setFitHeight(220);
+        closeupImage.setFitWidth(350);
+        closeupImage.setFitHeight(175);
 
         inspectionPanel.setMaxWidth(620);
         inspectionPanel.setMaxHeight(
                 sceneArea == null || sceneArea.getHeight() <= 0 ? 440 : Math.max(220, sceneArea.getHeight() - 16)
         );
-        inspectionPanel.setPadding(new Insets(14));
-        inspectionPanel.setSpacing(8);
+        inspectionPanel.setPadding(new Insets(12, 16, 12, 16));
+        inspectionPanel.setSpacing(7);
 
-        inspectionDescription.setFont(Font.font("Serif", 14));
+        inspectionDescription.setFont(Font.font("Serif", 13.5));
         inspectionDescription.setMaxWidth(540);
         inspectionDescription.setPrefWidth(540);
         inspectionDescription.setText(
-                "L'Ankh si incastra nell'altare. Una luce attraversa le pareti "
-                        + "e il sigillo si risveglia, rivelando il santuario nascosto.\n\n"
-                        + "Hai ricomposto gli indizi, superato le prove e raggiunto "
-                        + "il cuore del tempio. La tua esplorazione si conclude qui."
+                "Complimenti, " + playerName + "! L'Ankh risveglia il sigillo del santuario.\n"
+                        + evaluation.summary()
         );
 
         interactionContent.getChildren().clear();
+
+        Label rankLabel = UiStyleFactory.styledLabel(
+                "Grado: " + evaluation.rankTitle()
+                        + "  |  Reperti recuperati: " + evaluation.collectedRelics() + "/" + evaluation.totalRelics(),
+                13.5,
+                gold,
+                true
+        );
 
         Button restartButton = UiStyleFactory.createButton(
                 "Ricomincia l'avventura",
@@ -348,14 +357,14 @@ public class InspectionManager {
         );
 
         restartButton.setOnAction(event -> {
-            String playerName = gameSupplier.get().getPlayer().getName();
-            gameSetter.accept(gameManager.startNewGame(playerName));
+            String currentName = gameSupplier.get().getPlayer().getName();
+            gameSetter.accept(gameManager.startNewGame(currentName));
             closeInspection();
             statusSetter.accept("Una nuova esplorazione sta per cominciare.");
             refreshScreen.run();
         });
 
-        interactionContent.getChildren().add(restartButton);
+        interactionContent.getChildren().addAll(rankLabel, restartButton);
         inspectionPanel.setManaged(true);
         inspectionPanel.setVisible(true);
         inspectionPanel.toFront();

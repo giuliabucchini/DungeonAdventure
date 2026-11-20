@@ -14,6 +14,14 @@ public class GameManager {
     private static final String SEAL_FRAGMENT = "Scheggia del sigillo";
     private static final String HIEROGLYPH_TABLET = "Tavoletta dei geroglifici";
 
+    public record ArchaeologistEvaluation(
+            String rankTitle,
+            int collectedRelics,
+            int totalRelics,
+            String summary
+    ) {
+    }
+
     public Game startNewGame(String playerName) {
         List<Room> rooms = new ArrayList<>();
 
@@ -114,6 +122,36 @@ public class GameManager {
         rooms.add(sanctuaryCorridor);
 
         return new Game(playerName, rooms);
+    }
+
+    public ArchaeologistEvaluation evaluateEnding(Game game) {
+        int collected = game.getPlayer().getInventory().getItems().size();
+        int total = collected;
+        for (int i = 0; i < game.getRoomCount(); i++) {
+            total += game.getRoom(i).getItems().size();
+        }
+
+        String rankTitle;
+        String summary;
+        if (collected >= total) {
+            rankTitle = "Gran Maestro Archeologo del Tempio";
+            summary = "Non hai lasciato indietro nemmeno una traccia: hai recuperato tutte le "
+                    + total + " reliquie custodite nelle sale del santuario.";
+        } else if (collected >= 7) {
+            rankTitle = "Esploratore Esperto delle Antiche Rovine";
+            summary = "Hai esplorato il tempio con grande attenzione, riportando alla luce "
+                    + "quasi tutti i manufatti nascosti nelle camere.";
+        } else if (collected >= 4) {
+            rankTitle = "Cercatore di Reliquie";
+            summary = "Hai superato le prove del santuario, ma alcune sale custodiscono "
+                    + "ancora oggetti e iscrizioni da scoprire.";
+        } else {
+            rankTitle = "Viaggiatore Frettoloso";
+            summary = "Hai raggiunto subito l'altare finale, lasciando però quasi tutti "
+                    + "i tesori del tempio nascosti nell'ombra.";
+        }
+
+        return new ArchaeologistEvaluation(rankTitle, collected, total, summary);
     }
 
     public boolean moveToNextRoom(Game game) {
