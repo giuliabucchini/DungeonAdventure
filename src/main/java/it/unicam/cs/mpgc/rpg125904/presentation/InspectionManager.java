@@ -208,6 +208,9 @@ public class InspectionManager {
         feedback.setWrapText(true);
 
         Button solveButton = UiStyleFactory.createButton("Prova a risolvere", UiStyleFactory.BLUE, UiStyleFactory.CREAM);
+
+        answerField.textProperty().addListener((obs, oldText, newText) -> feedback.setText(""));
+
         solveButton.setOnAction(event -> {
             if (answerField.getText().isBlank()) {
                 feedback.setText("Inserisci una risposta.");

@@ -87,7 +87,7 @@ public class Puzzle implements RoomChallenge {
             return true;
         }
 
-        String normalized = answer.trim();
+        String normalized = answer.trim().replaceAll("\\s+", " ");
         for (String valid : validSolutions) {
             if (normalized.equalsIgnoreCase(valid.trim())) {
                 solved = true;

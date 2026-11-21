@@ -66,8 +66,11 @@ public class GameScreen {
         layout.setPadding(new Insets(10));
         layout.setStyle("-fx-background-color: #100e0b;");
 
-        roomTitle = UiStyleFactory.styledLabel("", 20, UiStyleFactory.GOLD, true);
-        Label gameTitle = UiStyleFactory.styledLabel("DUNGEON ADVENTURE", 18, UiStyleFactory.GOLD, true);
+        Label gameTitle = UiStyleFactory.styledLabel("DUNGEON ADVENTURE:", 18, UiStyleFactory.GOLD, true);
+        roomTitle = UiStyleFactory.styledLabel("", 18, UiStyleFactory.CREAM, true);
+
+        HBox titleBox = new HBox(8, gameTitle, roomTitle);
+        titleBox.setAlignment(Pos.CENTER_LEFT);
 
         statusLabel = UiStyleFactory.styledLabel(
                 "Benvenuto, " + game.getPlayer().getName() + "! Esplora la stanza.",
@@ -81,16 +84,24 @@ public class GameScreen {
         statusLabel.setPrefSize(165, 48);
         statusLabel.setMaxSize(165, 48);
 
+        Label playerLabel = UiStyleFactory.styledLabel(
+                "Avventuriero: " + game.getPlayer().getName(),
+                14,
+                UiStyleFactory.CREAM,
+                true
+        );
+        playerLabel.setMaxWidth(180);
+
         Button menuButton = UiStyleFactory.createButton("Menu", UiStyleFactory.BLUE);
         menuButton.setOnAction(event -> toggleMenuOverlay());
 
-        HBox header = new HBox(20, gameTitle, roomTitle, menuButton);
+        HBox header = new HBox(16, titleBox, playerLabel, menuButton);
         header.setAlignment(Pos.CENTER_LEFT);
         header.setPadding(new Insets(10, 15, 10, 15));
         header.setBackground(new Background(
                 new BackgroundFill(UiStyleFactory.DARK, new CornerRadii(8), Insets.EMPTY)
         ));
-        HBox.setHgrow(roomTitle, Priority.ALWAYS);
+        HBox.setHgrow(titleBox, Priority.ALWAYS);
         layout.setTop(header);
 
         sceneArea = new StackPane();
